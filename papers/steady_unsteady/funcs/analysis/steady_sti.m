@@ -1,9 +1,10 @@
-function x = steady_sti(tspan,fs,pulse_duration,pulse_interval,intensity)
+function x = steady_sti(total_time, fs, pulse_duration, pulse_interval, intensity)
+%STEADY_STI Generate a periodic stimulation train.
 
-t = 0:1/fs:tspan;  % 时间向量
-x = zeros(size(t));  % 初始化时间序列，全为 0
-for start_time = 0:pulse_interval:(tspan - pulse_duration)
-    idx = (t >= start_time) & (t < start_time + pulse_duration);
-    x(idx) = intensity;
+t = 0:1/fs:total_time;
+x = zeros(size(t));
+
+for onset = 0:pulse_interval:(total_time - pulse_duration)
+    x((t >= onset) & (t < onset + pulse_duration)) = intensity;
 end
-
+end

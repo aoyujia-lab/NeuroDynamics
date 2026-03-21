@@ -1,65 +1,55 @@
-function [r, pval] = dcor_colwise_optimized(X, y)
+function [r, pval] = dcor_colwise(X, y, n_perm)
+%DCOR_COLWISE Distance correlation for each column of X against y.
+%
+%   [r, pval] = dcor_colwise(X, y)
+%   [r, pval] = dcor_colwise(X, y, n_perm)
 
-    if isvector(y)
-        y = y(:);
-    else
-        error('y must be a vector.');
-    end
-
-    [n, p] = size(X);
-    if size(y,1) ~= n
-        error('X and y must have the same number of rows.');
-    end
-
-    r    = zeros(p, 1);
-    pval = ones(p, 1);
-    nPerm = 1000;
-
-    % 1. precompute centered distance matrix for y
-    By = local_centered_dist(y);
-    dvarY2 = mean(By(:) .* By(:));
-
-    if dvarY2 <= eps
-        r(:) = 0;
-        pval(:) = 1;
-        return;
-    end
-
-    parfor j = 1:p
-        x = X(:, j);
-        Bx = local_centered_dist(x);
-        dvarX2 = mean(Bx(:) .* Bx(:));
-
-        if dvarX2 <= eps
-            r(j) = 0;
-            pval(j) = 1;
-            continue;
-        end
-
-        % observed dCov^2
-        dcov2_XY = mean(Bx(:) .* By(:));
-        dcov2_XY = max(dcov2_XY, 0);
-
-        r(j) = sqrt(dcov2_XY / sqrt(dvarX2 * dvarY2));
-
-        % permutation test
-        dcov2_perm_all = zeros(nPerm, 1);
-        for ip = 1:nPerm
-            idx = randperm(n);
-            By_perm = By(idx, idx);
-            dcov2_perm_all(ip) = max(mean(Bx(:) .* By_perm(:)), 0);
-        end
-
-        pval(j) = (sum(dcov2_perm_all >= dcov2_XY) + 1) / (nPerm + 1);
-    end
+if nargin < 3 || isempty(n_perm)
+    n_perm = 1000;
 end
 
+if ~isvector(y)
+    error('y must be a vector.');
+end
 
-function A = local_centered_dist(x)
-    x = x(:);
-    D = abs(x - x.');
-    rowMean = mean(D, 2);
-    colMean = mean(D, 1);
-    grandMean = mean(D(:));
-    A = D - rowMean - colMean + grandMean;
+y = y(:);
+[n, n_feature] = size(X);
+if size(y, 1) ~= n
+    error('X and y must have the same number of rows.');
+end
+
+r = zeros(n_feature, 1);
+pval = ones(n_feature, 1);
+
+By = centered_distance_matrix(y);
+dvar_y = mean(By(:) .^ 2);
+if dvar_y <= eps
+    return;
+end
+
+parfor j = 1:n_feature
+    Bx = centered_distance_matrix(X(:, j));
+    dvar_x = mean(Bx(:) .^ 2);
+    if dvar_x <= eps
+        continue;
+    end
+
+    dcov_xy = max(mean(Bx(:) .* By(:)), 0);
+    r(j) = sqrt(dcov_xy / sqrt(dvar_x * dvar_y));
+
+    dcov_perm = zeros(n_perm, 1);
+    for ip = 1:n_perm
+        perm_idx = randperm(n);
+        By_perm = By(perm_idx, perm_idx);
+        dcov_perm(ip) = max(mean(Bx(:) .* By_perm(:)), 0);
+    end
+
+    pval(j) = (sum(dcov_perm >= dcov_xy) + 1) / (n_perm + 1);
+end
+end
+
+function A = centered_distance_matrix(x)
+x = x(:);
+D = abs(x - x.');
+A = D - mean(D, 2) - mean(D, 1) + mean(D(:));
 end
