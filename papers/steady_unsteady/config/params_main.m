@@ -15,15 +15,9 @@ C.data.FS        = 1/C.data.TR;          % Hz
 C.data.nTR       = 290;          % 
 C.data.nROI        = 360;          % 
 C.data.excludesubjects  = [2,35];        % or a vector: [1 3 5]
-C.data.excluderoi  = [];
+C.data.excluderoi  = [120,200];
 C.data.sesnum = 3;
 
-%% ===== 预处理参数 =====
-% C.preproc.detrend   = true;
-% C.preproc.zscore    = true;
-% C.preproc.hp_cutoff = 0.01;      % Hz
-% C.preproc.lp_cutoff = 0.5;       % Hz
-C.preproc.band_cutoff = [0.01 0.1];       % Hz
 
 %% ===== 频谱分析参数 =====
 C.psd.method    = 'periodogram';

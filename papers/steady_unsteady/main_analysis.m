@@ -12,14 +12,12 @@ C = params_main();
 
 [psd_out, psd_out_z, freq_out] = calculate_psd(P, C);
 
-% psd_out = psd_out .* 100;
-psd_out(:,[120,300],:,:)= [];
-psd_out_z(:,[120,300],:,:)= [];
+psd_out(:,C.data.excluderoi,:,:)= [];
+psd_out_z(:,C.data.excluderoi,:,:)= [];
 % PSD summary across ROIs
 mean_psd_brain = squeeze(mean(psd_out, 2));           % [nFreq x nSubj x nSes]
 mean_psd_subj  = squeeze(mean(mean_psd_brain, 2));    % [nFreq x nSes]
 sd_psd_subj    = squeeze(std(mean_psd_brain, 0, 2));  % [nFreq x nSes]
-
 
 % Frequency ranges (index-based)
 ranges = {1:32, 75:77, 118:120, 55:246};
@@ -47,73 +45,36 @@ for ir = 1:nRange
             stats(ir).roi.pair(ip).t, ...
             stats(ir).roi.pair(ip).p, ...
             C);
-        a_visualphasevar(MC(ir).pair(ip).X_correct,path,['ttest_',range_labels{ir},'_',stats(1).roi.pair(ip).name]);
+        roi2cifti_glasser(MC(ir).pair(ip).X_correct,path,['ttest_',range_labels{ir},'_',stats(1).roi.pair(ip).name]);
     end
 end
 
 %% machine learning
 
 % ---- SVM classification ----
-svm_tags = {'ultra_slow_', 'steady_0p083', 'steady_0p125', 'task_related'};
 S_svm = cell(nRange, 1);
 cd(P.results.fig)
 for ir = 1:nRange
     S_svm{ir} = psdsvm_anova_range(psd_range_z(ir).power_roi, C);
-    [fig, roc{ir}] = psdsvm_plot_results(S_svm{ir}, P.results.fig, svm_tags{ir});
+    [fig, roc{ir}] = psdsvm_plot_results(S_svm{ir}, P.results.fig, range_labels{ir});
 end
-
 
 close all
 
-delong_tbl = pairwise_delong_multiclass(S_svm, svm_tags);
-
-
+delong_tbl = pairwise_delong_multiclass(S_svm, range_labels);
 
 % ---- Behavior prediction ----
 RT = calc_rt(P, C);
 nBand = numel(ranges);
-% (A) ROI-wise correlation + correction
-C_multicorrect.stats.alpha = 0.01;
-C_multicorrect.stats.multicorrect = 'NONE';
-path = 'E:\DATA\Steady-Unsteady\Visualization';
-
-for ib = 1:nBand
-    % steady: session index = 2
-    Xs = squeeze(psd_range_z(ib).power_roi(:, :, 2))';   % [nSubj x nROI]
-    ys = RT.steady.all.mean(:);
-
-    [r_steady(:, ib), p_steady(:, ib)] = corr(Xs, ys, 'Rows', 'pairwise');
-    Rcorr_steady(ib) = a_multicorrect(r_steady(:, ib), p_steady(:, ib), C_multicorrect);
-    a_visualphasevar(Rcorr_steady(ib).X_correct,path,['psd_bhav_connect_steady_band',num2str(nBand)]);
-
-    % unsteady: session index = 3
-    Xu = squeeze(psd_range_z(ib).power_roi(:, :, 3))';
-    yu = RT.unsteady.all.mean(:);
-
-    [r_unsteady(:, ib), p_unsteady(:, ib)] = corr(Xu, yu, 'Rows', 'pairwise');
-    Rcorr_unsteady(ib) = a_multicorrect(r_unsteady(:, ib), p_unsteady(:, ib), C_multicorrect);
-    a_visualphasevar(Rcorr_unsteady(ib).X_correct,path,['psd_bhav_connect_unsteady_band',num2str(nBand)]);
-end
-
-% (B) CPM / prediction
 alpha_list = [0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0];
-% alpha_list = [0.9];
-
 
 for ia = 1:length(alpha_list)
     C.ml.enet_alpha_grid =  alpha_list(ia);
-
-    % S_pred_elas_steady_peak{ia} = predict_behavior_psd_elasticnet( ...
-    %     power_peak(:, :, 2), RT.steady.all.mean(:), [], C);
     for ib = 1:4
-        % S_pred_steady{ia,ib} = predict_behavior_psd( ...
-        %      psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C);
+        S_pred_elas_steady{ia,ib} = predict_behavior_psd_elasticnet( ...
+            psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C);
 
-        % 
-        % S_pred_elas_steady{ia,ib} = predict_behavior_psd_elasticnet( ...
-        %     psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C);
-        % 
-        % P_pred_elas_steady{ia,ib} = permtest_predict_behavior_psd_elasticnet(psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C, 1000);
+        P_pred_elas_steady{ia,ib} = permtest_predict_behavior_psd_elasticnet(psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C, 1000);
 
         S_pred_elas_unsteady{ia,ib} = predict_behavior_psd_elasticnet( ...
             psd_range_z(ib).power_roi(:, :, 3), RT.unsteady.all.mean(:), [], C);
@@ -123,8 +84,9 @@ for ia = 1:length(alpha_list)
     save('result.mat')
 end
 
+% for visualization
 label = 1:360;
-label([120,200]) = [];
+label(C.data.excluderoi) = [];
 
 for ia = 1:length(alpha_list)
     for ib = 1:4
@@ -137,10 +99,8 @@ for ia = 1:length(alpha_list)
         P_elas_steady(ia,ib) = S_pred_elas_steady{ia, ib}.eval.p_enet;
         P_elas_unsteady(ia,ib) = S_pred_elas_unsteady{ia, ib}.eval.p_enet;
 
-        % P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
-        % P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
-
-
+        P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
+        P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
 
         beta_elas_steady(ia,ib,:) = P_pred_elas_steady{ia, ib}.obs.beta_mean;
         beta_elas_unsteady(ia,ib,:) = P_pred_elas_unsteady{ia, ib}.obs.beta_mean;
@@ -156,9 +116,9 @@ RT_band1 = squeeze(beta_elas_steady(10,2,:));
 RT_band2 = squeeze(RT_pred_steady(10,2,:));
 RT_band3 = squeeze(RT_pred_steady(10,3,:));
 
-a_visualphasevar(squeeze(beta_elas_steady(8,1,:)),path,['beta_elas_band1']);
-a_visualphasevar(squeeze(beta_elas_steady(10,2,:)),path,['beta_elas_band2']);
-a_visualphasevar(squeeze(beta_elas_steady(10,3,:)),path,['beta_elas_band3']);
+roi2cifti_glasser(squeeze(beta_elas_steady(8,1,:)),path,['beta_elas_band1']);
+roi2cifti_glasser(squeeze(beta_elas_steady(10,2,:)),path,['beta_elas_band2']);
+roi2cifti_glasser(squeeze(beta_elas_steady(10,3,:)),path,['beta_elas_band3']);
 
 scatter(squeeze(RT_pred_steady(8,4,:)),RT.steady.all.mean(:))
 std(squeeze(RT_pred_steady(8,4,:)))
@@ -166,15 +126,6 @@ std(RT.steady.all.mean(:))
 
 r = a_multicorrect(squeeze(R_elas_unsteady(:,1,:)),squeeze(P_elas_unsteady(:,1,:)),C);
 r2 = a_multicorrect(R_elas_steady,P_elas_steady,C);
-
-
-
-% Extra model: steady peak features
-% S_pred_steady_peak = predict_behavior_psd( ...
-%     power_peak(:, :, 2), RT.steady.all.mean(:), [], C);
-
-% scatter(S_pred_elas_steady{1, 3}.pred.enet,RT.steady.all.mean(:))
-
 
 
 %% compare with GLM (steady + unsteady)
@@ -202,7 +153,6 @@ for ic = 1:numel(condList)
             path_unsteady = 'E:\DATA\Steady-unsteady\实验与被试\unsteady_3';
             design_matrix = build_design_from_xls(path_unsteady);
 
-            % 你原来是 [11:end]，保留；如果这里是去掉前10行header/空行就合理
             X = design_matrix(11:end,:);
             ses = 'ses-3';
     end
@@ -242,10 +192,10 @@ for ic = 1:numel(condList)
     T_beta2_correct = a_multicorrect(T_beta2, P_beta2, C);
 
     outPath = 'E:\DATA\Steady-Unsteady\Visualization';
-    v360_T1 = restore_vector(T_beta1_correct.X_correct(:));
-    v360_T2 = restore_vector(T_beta2_correct.X_correct(:));
-    a_visualphasevar(v360_T1, outPath, sprintf('T08_activation_%s',cond));
-    a_visualphasevar(v360_T2, outPath, sprintf('T12_activation_%s',cond));
+    v360_T1 = restore_vector(T_beta1_correct.X_correct(:),C);
+    v360_T2 = restore_vector(T_beta2_correct.X_correct(:),C);
+    roi2cifti_glasser(v360_T1, outPath, sprintf('T08_activation_%s',cond));
+    roi2cifti_glasser(v360_T2, outPath, sprintf('T12_activation_%s',cond));
 
     TSTAT.(cond).beta1 = T_beta1;
     TSTAT.(cond).beta2 = T_beta2;
@@ -257,18 +207,17 @@ for ic = 1:numel(condList)
         case 'steady'
             y = RT.steady.all.mean(:);
         case 'unsteady'
-            % 如果你的 RT 里字段不是这个名字，把它改成你的真实字段
             y = RT.unsteady.all.mean(:);
     end
 
-    % for ia = 1:numel(alpha_list)
-    %     C.ml.enet_alpha_grid = alpha_list(ia);
-    %     S_pred_elas_glm_L.(cond){ia} = predict_behavior_psd_elasticnet(res.beta1, y, [], C);
-    %     S_pred_elas_glm_R.(cond){ia} = predict_behavior_psd_elasticnet(res.beta2, y, [], C);
-    %     P_pred_elas_glm_L.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta1, y, [], C, 1000);
-    %     P_pred_elas_glm_R.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta2, y, [], C, 1000);
-    % end
-    % save('result.mat')
+    for ia = 1:numel(alpha_list)
+        C.ml.enet_alpha_grid = alpha_list(ia);
+        S_pred_elas_glm_L.(cond){ia} = predict_behavior_psd_elasticnet(res.beta1, y, [], C);
+        S_pred_elas_glm_R.(cond){ia} = predict_behavior_psd_elasticnet(res.beta2, y, [], C);
+        P_pred_elas_glm_L.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta1, y, [], C, 1000);
+        P_pred_elas_glm_R.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta2, y, [], C, 1000);
+    end
+    save('result.mat')
 end
 
 for ia = 1:length(alpha_list)
@@ -446,61 +395,252 @@ ts_st = steady_sti(C.jr.tmax, 1/dt, pulse_duration, pulse_interval1, intensity);
 ts_st(end) = [];
 ts_st_full = [zeros(1, round(60/dt)), ts_st];
 
-stimM = zeros(360,length(ts_st_full));
-rois1 = [1:49];
-rois2 = rois1+180;
-rois = [rois1,rois2];
+stimM = zeros(360,length(ts_st_full));%% whole brain model
+load('G:\Yujia_Ao\Data\SSBR\averageConnectivity_Fpt.mat')
+M = 10.^Fpt;
+M(isnan(M)) = 0;
+
+intensity           = C.jr.stim;
+pulse_duration      = 1;
+pulse_interval1     = 8;
+pulse_min_interval1 = 4;
+pulse_max_interval1 = 16;
+dt = C.jr.dt;
+
+ts_st = steady_sti(C.jr.tmax, 1/dt, pulse_duration, pulse_interval1, intensity);
+ts_st(end) = [];
+ts_st_full = [zeros(1, round(60/dt)), ts_st];
+
+stimM = zeros(360, length(ts_st_full));
+rois1 = 1:49;
+rois2 = rois1 + 180;
+rois = [rois1, rois2];
+other_rois = setdiff(1:360, rois); %#ok<NASGU>
 stimM(rois, :) = repmat(ts_st_full, length(rois), 1);
 
 
-Gidex = linspace(1,5,10);
-p = gcp('nocreate');
-if ~isempty(p)
-    delete(p);
-end
+%% parameter setting
+nAlpha = 200;          % alpha sweep points
+nBeta  = 200;          % beta sweep points
+nR0   = 200;          % r0 sweep points
 
-% 开 8 个 worker
-parpool('local', 4);
+nSub   = 1;            % number of subjects / repetitions
 
-fs = 0.5;
-for i = 1:10
-    i
-    Ci = C;               
-    Ci.jr.G = Gidex(i);
-
-    [s0_out, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
-
-    bold_dt  = balloon_from_neural(s0_out', 2e-3);
-
-    x_steady = downsample(bold_dt', 1000);
-    x_steady(1,:) = [];
-
-    [psd, f] = periodogram(x_steady, [], [], fs);
-
-     % ---- 只保留 f > 0.01 Hz ----
-    idx = (f > 0.01);
-    psd = psd(idx, :);
-
-    % ---- 概率标准化：每个ROI一列，sum over f = 1 ----
-    colsum = sum(psd, 1);                 % 1 x nROI
-    psd = psd ./ colsum;                  % implicit expansion
-
-    PSD(:,:,i) = psd;
-end
-
-psd1 = squeeze(mean(PSD(:,50:end,:),2));
-mean_psd = squeeze(mean(PSD,2));
-f(1:20) = [];
-
-x_steady = downsample(bold_dt',1000);
-x_steady(1,:) = [];
+alphaIndex = linspace(0, 1, nAlpha);
+betaIndex  = linspace(0, 0.5, nBeta);
+r0Index = linspace(0, 1, nR0);
+alpha_fix  = 0.5;
+beta_fix  = 0.25;
 
 fs = 0.5;
-[psd,f] = pwelch(x_steady,[],[],[],fs);
-psd2 = psd(7:end,:);
 
-psd08 = psd2(38,:);
+f_keep = [];   
+savefile = 'G:\Yujia_Ao\Data\SSBR\PSD_results_incremental_0321.mat';
 
-mean_psd = mean(psd2,2);
+%% =========================================================
+% 1) sweep alpha: alpha = 0 ~ 1
+% =========================================================
+ds_bold = round(2 / C.jr.dt);
+
+for i = 1:nAlpha
+    fprintf('Alpha point %d/%d, alpha = %.4f\n', i, nAlpha, alphaIndex(i));
+    tic
+
+    for sub = 1:nSub
+        fprintf('   subject %d/%d\n', sub, nSub);
+
+        Ci = C;
+        Ci.jr.alpha = alphaIndex(i);
+        Ci.jr.beta = beta_fix;
+
+        % 如果模型有随机性，建议每个sub用不同seed
+        Ci.jr.seed = sub;
+
+        % =========================
+        % simulate task
+        % =========================
+        [s0_task, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
+
+        % =========================
+        % task: neural -> BOLD -> PSD
+        % =========================
+        bold_dt_task = balloon_from_neural(s0_task', C.jr.dt);
+
+        % 直接取点，不用 downsample
+        x_steady_task = bold_dt_task(:,1:ds_bold:end);
+
+
+        [psd_raw_task, f] = periodogram(x_steady_task', [], [], fs);
+
+        idx = (f > 0);
+        psd_raw_task = psd_raw_task(idx, :);
+
+
+        colsum_task = sum(psd_raw_task, 1);
+        colsum_task(colsum_task == 0) = eps;
+        psd_norm_task = psd_raw_task ./ colsum_task;
+
+        % =========================
+        % save alpha sweep
+        % =========================
+        PSD_raw_task(:, :, i, sub) = psd_raw_task;
+        PSD_task(:, :, i, sub)     = psd_norm_task;
+    end
+
+    done_idx_alpha = i;
+
+    f_keep = f(idx);
+    f_keep(end) = [];
+
+    save(savefile, ...
+         'PSD_task', 'PSD_raw_task', ...
+         'f_keep', 'alphaIndex', 'done_idx_alpha', ...
+         '-v7.3');
+
+    toc
+end
+
+%% =========================================================
+% 2) sweep beta: beta = 0 ~ 0.5, with alpha fixed at 0.5
+% =========================================================
+for i = 1:nBeta
+    fprintf('Beta point %d/%d, beta = %.4f (alpha fixed = %.2f)\n', ...
+        i, nBeta, betaIndex(i), alpha_fix);
+    tic
+
+    for sub = 1:nSub
+        fprintf('   subject %d/%d\n', sub, nSub);
+
+        Ci = C;
+        Ci.jr.alpha = alpha_fix;
+        Ci.jr.beta  = betaIndex(i);
+
+        % 如果模型有随机性，建议每个sub用不同seed
+        Ci.jr.seed = sub;
+
+        % =========================
+        % simulate task
+        % =========================
+        [s0_task, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
+
+        % =========================
+        % task: neural -> BOLD -> PSD
+        % =========================
+        bold_dt_task = balloon_from_neural(s0_task', C.jr.dt);
+
+        % 直接取点，不用 downsample
+        x_steady_task = bold_dt_task(:,1:ds_bold:end);
+
+
+        [psd_raw_task, ~] = periodogram(x_steady_task', [], [], fs);
+
+        psd_raw_task = psd_raw_task(idx, :);
+
+
+        colsum_task = sum(psd_raw_task, 1);
+        colsum_task(colsum_task == 0) = eps;
+        psd_norm_task = psd_raw_task ./ colsum_task;
+
+        % =========================
+        % save beta sweep
+        % =========================
+        PSD_raw_task_beta(:, :, i, sub) = psd_raw_task;
+        PSD_task_beta(:, :, i, sub)     = psd_norm_task;
+    end
+
+    done_idx_beta = i;
+
+    f_keep = f(idx);
+    f_keep(end) = [];
+
+    save(savefile, ...
+        'PSD_task', 'PSD_raw_task', ...
+        'PSD_task_beta', 'PSD_raw_task_beta', ...
+        'f_keep', 'alphaIndex', 'betaIndex', ...
+        'alpha_fix', 'done_idx_alpha', 'done_idx_beta', '-v7.3');
+
+    toc
+end
+
+%% =========================================================
+% 3) sweep r0: r0 = 0 ~ 1, with alpha fixed at 0.5 and beta fixed at 0.25
+% =========================================================
+for i = 1:nR0
+    fprintf('r0 point %d/%d, r0 = %.4f (alpha fixed = %.2f, beta fixed = %.2f)\n', ...
+        i, nR0, r0Index(i), alpha_fix, beta_fix);
+    tic
+
+    for sub = 1:nSub
+        fprintf('   subject %d/%d\n', sub, nSub);
+
+        Ci = C;
+        Ci.jr.alpha = alpha_fix;
+        Ci.jr.beta  = beta_fix;
+        Ci.jr.r0    = r0Index(i);
+
+        % 如果模型有随机性，建议每个sub用不同seed
+        Ci.jr.seed = sub;
+
+        % =========================
+        % simulate task
+        % =========================
+        [s0_task, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
+
+        % =========================
+        % task: neural -> BOLD -> PSD
+        % =========================
+        bold_dt_task = balloon_from_neural(s0_task', C.jr.dt);
+
+        % 直接取点，不用 downsample
+        x_steady_task = bold_dt_task(:,1:ds_bold:end);
+
+        [psd_raw_task, ~] = periodogram(x_steady_task', [], [], fs);
+
+        psd_raw_task = psd_raw_task(idx, :);
+
+        colsum_task = sum(psd_raw_task, 1);
+        colsum_task(colsum_task == 0) = eps;
+        psd_norm_task = psd_raw_task ./ colsum_task;
+
+        % =========================
+        % save r0 sweep
+        % =========================
+        PSD_raw_task_r0(:, :, i, sub) = psd_raw_task;
+        PSD_task_r0(:, :, i, sub)     = psd_norm_task;
+    end
+
+    done_idx_r0 = i;
+
+    f_keep = f(idx);
+    f_keep(end) = [];
+
+    save(savefile, ...
+        'PSD_task', 'PSD_raw_task', ...
+        'PSD_task_beta', 'PSD_raw_task_beta', ...
+        'PSD_task_r0', 'PSD_raw_task_r0', ...
+        'f_keep', 'alphaIndex', 'betaIndex', 'r0Index', ...
+        'alpha_fix', 'beta_fix', ...
+        'done_idx_alpha', 'done_idx_beta', 'done_idx_r0', ...
+        '-v7.3');
+
+    toc
+end
+
+PSD_rest_task = PSD_task-PSD_rest;
+PSD_rest_task = PSD_task_beta-PSD_rest_beta;
+
+psd3 = squeeze(mean(PSD_rest_task(:,other_rois,:,:),2));
+psd33 = squeeze(mean(psd3,3));
+
+
+cd('G:\Yujia_Ao\Data\SSBR')
+save JR_wholebrain PSD Gidex
+
+psd2 = squeeze(mean(PSD_task_beta(:,other_rois,:,:),2));
+psd22 = squeeze(mean(psd2,3));
+
+psd1 = squeeze(mean(PSD_task_beta(:,rois,:,:),2));
+psd11 = squeeze(mean(psd1,3));
+
 
 
