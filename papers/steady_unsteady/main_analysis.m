@@ -379,23 +379,6 @@ plot(results.r0.R2)
 plot(results.a_vel.psd_task_minus_rest(118,:))
 
 %% whole brain model
-load('E:\DATA\Steady-unsteady\SC\averageConnectivity_Fpt.mat')
-M = 10.^Fpt;
-M(isnan(M)) = 0;
-load('E:\DATA\Steady-unsteady\SC\averageConnectivity_tractLengths.mat')
-
-intensity           = C.jr.stim;
-pulse_duration      = 1;
-pulse_interval1     = 12;
-pulse_min_interval1 = 4;
-pulse_max_interval1 = 16;
-dt = C.jr.dt;
-
-ts_st = steady_sti(C.jr.tmax, 1/dt, pulse_duration, pulse_interval1, intensity);
-ts_st(end) = [];
-ts_st_full = [zeros(1, round(60/dt)), ts_st];
-
-stimM = zeros(360,length(ts_st_full));%% whole brain model
 load('G:\Yujia_Ao\Data\SSBR\averageConnectivity_Fpt.mat')
 M = 10.^Fpt;
 M(isnan(M)) = 0;
@@ -403,13 +386,11 @@ M(isnan(M)) = 0;
 intensity           = C.jr.stim;
 pulse_duration      = 1;
 pulse_interval1     = 8;
-pulse_min_interval1 = 4;
-pulse_max_interval1 = 16;
 dt = C.jr.dt;
 
-ts_st = steady_sti(C.jr.tmax, 1/dt, pulse_duration, pulse_interval1, intensity);
+ts_st = steady_sti(C.jr.tmax, 1 / dt, pulse_duration, pulse_interval1, intensity);
 ts_st(end) = [];
-ts_st_full = [zeros(1, round(60/dt)), ts_st];
+ts_st_full = [zeros(1, round(60 / dt)), ts_st];
 
 stimM = zeros(360, length(ts_st_full));
 rois1 = 1:49;
@@ -418,212 +399,109 @@ rois = [rois1, rois2];
 other_rois = setdiff(1:360, rois); %#ok<NASGU>
 stimM(rois, :) = repmat(ts_st_full, length(rois), 1);
 
-
 %% parameter setting
-nAlpha = 200;          % alpha sweep points
-nBeta  = 200;          % beta sweep points
-nR0   = 200;          % r0 sweep points
-
-nSub   = 1;            % number of subjects / repetitions
+nAlpha = 200;
+nBeta  = 200;
+nR0    = 200;
+nSub   = 1;
 
 alphaIndex = linspace(0, 1, nAlpha);
 betaIndex  = linspace(0, 0.5, nBeta);
-r0Index = linspace(0, 1, nR0);
+r0Index    = linspace(0, 1, nR0);
 alpha_fix  = 0.5;
-beta_fix  = 0.25;
+beta_fix   = 0.25;
 
 fs = 0.5;
-
-f_keep = [];   
+ds_bold = round(2 / C.jr.dt);
+f_keep = [];
 savefile = 'G:\Yujia_Ao\Data\SSBR\PSD_results_incremental_0321.mat';
 
-%% =========================================================
-% 1) sweep alpha: alpha = 0 ~ 1
-% =========================================================
-ds_bold = round(2 / C.jr.dt);
+PSD_task = [];
+PSD_raw_task = [];
+PSD_task_beta = [];
+PSD_raw_task_beta = [];
+PSD_task_r0 = [];
+PSD_raw_task_r0 = [];
+done_idx_alpha = 0;
+done_idx_beta = 0;
+done_idx_r0 = 0;
 
-for i = 1:nAlpha
-    fprintf('Alpha point %d/%d, alpha = %.4f\n', i, nAlpha, alphaIndex(i));
-    tic
+sweepConfigs = {
+    struct('name', 'alpha', 'values', alphaIndex, ...
+           'fixed_alpha', [], 'fixed_beta', beta_fix, 'fixed_r0', C.jr.r0)
+    struct('name', 'beta', 'values', betaIndex, ...
+           'fixed_alpha', alpha_fix, 'fixed_beta', [], 'fixed_r0', C.jr.r0)
+    struct('name', 'r0', 'values', r0Index, ...
+           'fixed_alpha', alpha_fix, 'fixed_beta', beta_fix, 'fixed_r0', [])
+};
 
-    for sub = 1:nSub
-        fprintf('   subject %d/%d\n', sub, nSub);
+for isweep = 1:numel(sweepConfigs)
+    cfg = sweepConfigs{isweep};
+    nPoint = numel(cfg.values);
 
-        Ci = C;
-        Ci.jr.alpha = alphaIndex(i);
-        Ci.jr.beta = beta_fix;
+    for i = 1:nPoint
+        fprintf('%s point %d/%d, %s = %.4f\n', ...
+            cfg.name, i, nPoint, cfg.name, cfg.values(i));
+        tic
 
-        % 如果模型有随机性，建议每个sub用不同seed
-        Ci.jr.seed = sub;
+        for sub = 1:nSub
+            fprintf('   subject %d/%d\n', sub, nSub);
 
-        % =========================
-        % simulate task
-        % =========================
-        [s0_task, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
+            Ci = C;
+            Ci.jr.alpha = cfg.fixed_alpha;
+            Ci.jr.beta  = cfg.fixed_beta;
+            Ci.jr.r0    = cfg.fixed_r0;
+            Ci.jr.(cfg.name) = cfg.values(i);
+            Ci.jr.seed = sub;
 
-        % =========================
-        % task: neural -> BOLD -> PSD
-        % =========================
-        bold_dt_task = balloon_from_neural(s0_task', C.jr.dt);
+            [s0_task, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
+            bold_dt_task = balloon_from_neural(s0_task', C.jr.dt);
+            x_steady_task = bold_dt_task(:, 1:ds_bold:end);
 
-        % 直接取点，不用 downsample
-        x_steady_task = bold_dt_task(:,1:ds_bold:end);
+            [psd_raw_task_i, f] = periodogram(x_steady_task', [], [], fs);
+            idx = (f > 0);
+            psd_raw_task_i = psd_raw_task_i(idx, :);
 
+            colsum_task = sum(psd_raw_task_i, 1);
+            colsum_task(colsum_task == 0) = eps;
+            psd_norm_task_i = psd_raw_task_i ./ colsum_task;
 
-        [psd_raw_task, f] = periodogram(x_steady_task', [], [], fs);
+            switch cfg.name
+                case 'alpha'
+                    PSD_raw_task(:, :, i, sub) = psd_raw_task_i;
+                    PSD_task(:, :, i, sub) = psd_norm_task_i;
+                case 'beta'
+                    PSD_raw_task_beta(:, :, i, sub) = psd_raw_task_i;
+                    PSD_task_beta(:, :, i, sub) = psd_norm_task_i;
+                case 'r0'
+                    PSD_raw_task_r0(:, :, i, sub) = psd_raw_task_i;
+                    PSD_task_r0(:, :, i, sub) = psd_norm_task_i;
+            end
+        end
 
-        idx = (f > 0);
-        psd_raw_task = psd_raw_task(idx, :);
+        switch cfg.name
+            case 'alpha'
+                done_idx_alpha = i;
+            case 'beta'
+                done_idx_beta = i;
+            case 'r0'
+                done_idx_r0 = i;
+        end
 
+        f_keep = f(idx);
+        f_keep(end) = [];
 
-        colsum_task = sum(psd_raw_task, 1);
-        colsum_task(colsum_task == 0) = eps;
-        psd_norm_task = psd_raw_task ./ colsum_task;
+        save(savefile, ...
+            'PSD_task', 'PSD_raw_task', ...
+            'PSD_task_beta', 'PSD_raw_task_beta', ...
+            'PSD_task_r0', 'PSD_raw_task_r0', ...
+            'f_keep', 'alphaIndex', 'betaIndex', 'r0Index', ...
+            'alpha_fix', 'beta_fix', ...
+            'done_idx_alpha', 'done_idx_beta', 'done_idx_r0', ...
+            '-v7.3');
 
-        % =========================
-        % save alpha sweep
-        % =========================
-        PSD_raw_task(:, :, i, sub) = psd_raw_task;
-        PSD_task(:, :, i, sub)     = psd_norm_task;
+        toc
     end
-
-    done_idx_alpha = i;
-
-    f_keep = f(idx);
-    f_keep(end) = [];
-
-    save(savefile, ...
-         'PSD_task', 'PSD_raw_task', ...
-         'f_keep', 'alphaIndex', 'done_idx_alpha', ...
-         '-v7.3');
-
-    toc
-end
-
-%% =========================================================
-% 2) sweep beta: beta = 0 ~ 0.5, with alpha fixed at 0.5
-% =========================================================
-for i = 1:nBeta
-    fprintf('Beta point %d/%d, beta = %.4f (alpha fixed = %.2f)\n', ...
-        i, nBeta, betaIndex(i), alpha_fix);
-    tic
-
-    for sub = 1:nSub
-        fprintf('   subject %d/%d\n', sub, nSub);
-
-        Ci = C;
-        Ci.jr.alpha = alpha_fix;
-        Ci.jr.beta  = betaIndex(i);
-
-        % 如果模型有随机性，建议每个sub用不同seed
-        Ci.jr.seed = sub;
-
-        % =========================
-        % simulate task
-        % =========================
-        [s0_task, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
-
-        % =========================
-        % task: neural -> BOLD -> PSD
-        % =========================
-        bold_dt_task = balloon_from_neural(s0_task', C.jr.dt);
-
-        % 直接取点，不用 downsample
-        x_steady_task = bold_dt_task(:,1:ds_bold:end);
-
-
-        [psd_raw_task, ~] = periodogram(x_steady_task', [], [], fs);
-
-        psd_raw_task = psd_raw_task(idx, :);
-
-
-        colsum_task = sum(psd_raw_task, 1);
-        colsum_task(colsum_task == 0) = eps;
-        psd_norm_task = psd_raw_task ./ colsum_task;
-
-        % =========================
-        % save beta sweep
-        % =========================
-        PSD_raw_task_beta(:, :, i, sub) = psd_raw_task;
-        PSD_task_beta(:, :, i, sub)     = psd_norm_task;
-    end
-
-    done_idx_beta = i;
-
-    f_keep = f(idx);
-    f_keep(end) = [];
-
-    save(savefile, ...
-        'PSD_task', 'PSD_raw_task', ...
-        'PSD_task_beta', 'PSD_raw_task_beta', ...
-        'f_keep', 'alphaIndex', 'betaIndex', ...
-        'alpha_fix', 'done_idx_alpha', 'done_idx_beta', '-v7.3');
-
-    toc
-end
-
-%% =========================================================
-% 3) sweep r0: r0 = 0 ~ 1, with alpha fixed at 0.5 and beta fixed at 0.25
-% =========================================================
-for i = 1:nR0
-    fprintf('r0 point %d/%d, r0 = %.4f (alpha fixed = %.2f, beta fixed = %.2f)\n', ...
-        i, nR0, r0Index(i), alpha_fix, beta_fix);
-    tic
-
-    for sub = 1:nSub
-        fprintf('   subject %d/%d\n', sub, nSub);
-
-        Ci = C;
-        Ci.jr.alpha = alpha_fix;
-        Ci.jr.beta  = beta_fix;
-        Ci.jr.r0    = r0Index(i);
-
-        % 如果模型有随机性，建议每个sub用不同seed
-        Ci.jr.seed = sub;
-
-        % =========================
-        % simulate task
-        % =========================
-        [s0_task, ~, ~, ~, ~] = jansenrit_RK2_network(M, stimM, Ci);
-
-        % =========================
-        % task: neural -> BOLD -> PSD
-        % =========================
-        bold_dt_task = balloon_from_neural(s0_task', C.jr.dt);
-
-        % 直接取点，不用 downsample
-        x_steady_task = bold_dt_task(:,1:ds_bold:end);
-
-        [psd_raw_task, ~] = periodogram(x_steady_task', [], [], fs);
-
-        psd_raw_task = psd_raw_task(idx, :);
-
-        colsum_task = sum(psd_raw_task, 1);
-        colsum_task(colsum_task == 0) = eps;
-        psd_norm_task = psd_raw_task ./ colsum_task;
-
-        % =========================
-        % save r0 sweep
-        % =========================
-        PSD_raw_task_r0(:, :, i, sub) = psd_raw_task;
-        PSD_task_r0(:, :, i, sub)     = psd_norm_task;
-    end
-
-    done_idx_r0 = i;
-
-    f_keep = f(idx);
-    f_keep(end) = [];
-
-    save(savefile, ...
-        'PSD_task', 'PSD_raw_task', ...
-        'PSD_task_beta', 'PSD_raw_task_beta', ...
-        'PSD_task_r0', 'PSD_raw_task_r0', ...
-        'f_keep', 'alphaIndex', 'betaIndex', 'r0Index', ...
-        'alpha_fix', 'beta_fix', ...
-        'done_idx_alpha', 'done_idx_beta', 'done_idx_r0', ...
-        '-v7.3');
-
-    toc
 end
 
 PSD_rest_task = PSD_task-PSD_rest;
