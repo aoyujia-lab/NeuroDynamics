@@ -1,21 +1,15 @@
-function v360 = restore_vector(v358,C)
-% RESTORE_VECTOR Restore a 358x1 vector to 360x1 by inserting zeros
-% at positions 120 and 200.
-%
-% INPUT
-%   v358 : 358x1 vector (after removing elements 120 and 200)
-%
-% OUTPUT
-%   v360 : 360x1 vector with zeros at 120 and 200
+function v_full = restore_vector(v_keep, C)
+%RESTORE_VECTOR Restore a vector after removing excluded ROIs.
 
-    if length(v358) ~= 358
-        error('Input vector must be 358x1.');
-    end
+removed_idx = C.data.excluderoi(:)';
+nROI = C.data.nROI;
+keep_idx = setdiff(1:nROI, removed_idx, 'stable');
 
-    removed_idx = C.data.excluderoi;
+if numel(v_keep) ~= numel(keep_idx)
+    error('Input vector length (%d) does not match the number of kept ROIs (%d).', ...
+        numel(v_keep), numel(keep_idx));
+end
 
-    v360 = zeros(360,1);
-    keep_idx = setdiff(1:360, removed_idx);
-
-    v360(keep_idx) = v358;
+v_full = zeros(nROI, 1);
+v_full(keep_idx) = v_keep(:);
 end
