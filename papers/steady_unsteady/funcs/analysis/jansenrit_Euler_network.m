@@ -1,5 +1,5 @@
 function [s0_out, x0_out, x1mx2_out, time_vector, info] = ...
-    jansenrit_RK2_network(M, stim, C)
+    jansenrit_Euler_network(M, stim, C)
 
 % JR network (Euler)
 %

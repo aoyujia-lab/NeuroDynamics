@@ -72,7 +72,7 @@ C.jr.C4 = 0.25;
 
 C.jr.A      = 3.25;   % EPSP amplitude
 C.jr.B      = 22;     % IPSP amplitude
-C.jr.alpha  = 0;
+C.jr.alpha  = 0.5;
 C.jr.beta  = 0.25;
 % --- Sigmoid ---
 C.jr.e0 = 2.5;
