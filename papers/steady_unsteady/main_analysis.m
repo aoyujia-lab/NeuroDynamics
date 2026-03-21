@@ -47,7 +47,7 @@ for ir = 1:nRange
             stats(ir).roi.pair(ip).t, ...
             stats(ir).roi.pair(ip).p, ...
             C);
-        a_visualphasevar(MC(ir).pair(ip).X_correct,path,['ttest_',range_labels{ir},'_',stats(1).roi.pair(ip).name]);
+        write_roi_scalar_map_cifti(MC(ir).pair(ip).X_correct, path, ['ttest_', range_labels{ir}, '_', stats(1).roi.pair(ip).name]);
     end
 end
 
@@ -84,7 +84,7 @@ for ib = 1:nBand
 
     [r_steady(:, ib), p_steady(:, ib)] = corr(Xs, ys, 'Rows', 'pairwise');
     Rcorr_steady(ib) = a_multicorrect(r_steady(:, ib), p_steady(:, ib), C_multicorrect);
-    a_visualphasevar(Rcorr_steady(ib).X_correct,path,['psd_bhav_connect_steady_band',num2str(nBand)]);
+    write_roi_scalar_map_cifti(Rcorr_steady(ib).X_correct, path, ['psd_bhav_connect_steady_band', num2str(nBand)]);
 
     % unsteady: session index = 3
     Xu = squeeze(psd_range_z(ib).power_roi(:, :, 3))';
@@ -92,7 +92,7 @@ for ib = 1:nBand
 
     [r_unsteady(:, ib), p_unsteady(:, ib)] = corr(Xu, yu, 'Rows', 'pairwise');
     Rcorr_unsteady(ib) = a_multicorrect(r_unsteady(:, ib), p_unsteady(:, ib), C_multicorrect);
-    a_visualphasevar(Rcorr_unsteady(ib).X_correct,path,['psd_bhav_connect_unsteady_band',num2str(nBand)]);
+    write_roi_scalar_map_cifti(Rcorr_unsteady(ib).X_correct, path, ['psd_bhav_connect_unsteady_band', num2str(nBand)]);
 end
 
 % (B) CPM / prediction
@@ -156,9 +156,9 @@ RT_band1 = squeeze(beta_elas_steady(10,2,:));
 RT_band2 = squeeze(RT_pred_steady(10,2,:));
 RT_band3 = squeeze(RT_pred_steady(10,3,:));
 
-a_visualphasevar(squeeze(beta_elas_steady(8,1,:)),path,['beta_elas_band1']);
-a_visualphasevar(squeeze(beta_elas_steady(10,2,:)),path,['beta_elas_band2']);
-a_visualphasevar(squeeze(beta_elas_steady(10,3,:)),path,['beta_elas_band3']);
+write_roi_scalar_map_cifti(squeeze(beta_elas_steady(8,1,:)), path, ['beta_elas_band1']);
+write_roi_scalar_map_cifti(squeeze(beta_elas_steady(10,2,:)), path, ['beta_elas_band2']);
+write_roi_scalar_map_cifti(squeeze(beta_elas_steady(10,3,:)), path, ['beta_elas_band3']);
 
 scatter(squeeze(RT_pred_steady(8,4,:)),RT.steady.all.mean(:))
 std(squeeze(RT_pred_steady(8,4,:)))
@@ -244,8 +244,8 @@ for ic = 1:numel(condList)
     outPath = 'E:\DATA\Steady-Unsteady\Visualization';
     v360_T1 = restore_vector(T_beta1_correct.X_correct(:));
     v360_T2 = restore_vector(T_beta2_correct.X_correct(:));
-    a_visualphasevar(v360_T1, outPath, sprintf('T08_activation_%s',cond));
-    a_visualphasevar(v360_T2, outPath, sprintf('T12_activation_%s',cond));
+    write_roi_scalar_map_cifti(v360_T1, outPath, sprintf('T08_activation_%s', cond));
+    write_roi_scalar_map_cifti(v360_T2, outPath, sprintf('T12_activation_%s', cond));
 
     TSTAT.(cond).beta1 = T_beta1;
     TSTAT.(cond).beta2 = T_beta2;
@@ -502,5 +502,4 @@ psd2 = psd(7:end,:);
 psd08 = psd2(38,:);
 
 mean_psd = mean(psd2,2);
-
 
