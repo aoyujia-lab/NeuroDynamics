@@ -66,8 +66,8 @@ alpha_range = local_getfield(jr, 'alpha_range', [0, 1]);
 beta_range  = local_getfield(jr, 'beta_range',  [0, 0.5]);
 r0_range    = local_getfield(jr, 'r0_range',    [0, 1]);
 
-alpha_fix = local_getfield(jr, 'alpha_fix', 0.5);
-beta_fix  = local_getfield(jr, 'beta_fix', 0.25);
+alpha_fix = local_getfield(jr, 'alpha', 0.5);
+beta_fix  = local_getfield(jr, 'beta', 0.25);
 
 pulse_duration  = local_getfield(jr, 'pulse_duration', 1);
 pulse_interval1 = local_getfield(jr, 'pulse_interval1', 8);

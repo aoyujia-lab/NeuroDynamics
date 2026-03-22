@@ -68,60 +68,62 @@ nBand = numel(ranges);
 alpha_list = [0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0];
 
 for ia = 1:length(alpha_list)
+    ia
     C.ml.enet_alpha_grid =  alpha_list(ia);
     for ib = 1:4
-        S_pred_elas_steady{ia,ib} = predict_behavior_psd_elasticnet( ...
+        S_pred_elas_steady{ia,10} = predict_behavior_psd_elasticnet( ...
             psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C);
-        P_pred_elas_steady{ia,ib} = permtest_predict_behavior_psd_elasticnet(psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C, 1000);
-        S_pred_elas_unsteady{ia,ib} = predict_behavior_psd_elasticnet( ...
-            psd_range_z(ib).power_roi(:, :, 3), RT.unsteady.all.mean(:), [], C);
-        P_pred_elas_unsteady{ia,ib} = permtest_predict_behavior_psd_elasticnet(psd_range_z(ib).power_roi(:, :, 3), RT.unsteady.all.mean(:), [], C, 1000);
+        % P_pred_elas_steady{ia,ib} = permtest_predict_behavior_psd_elasticnet(psd_range_z(ib).power_roi(:, :, 2), RT.steady.all.mean(:), [], C);
+        % S_pred_elas_unsteady{ia,ib} = predict_behavior_psd_elasticnet( ...
+        %     psd_range_z(ib).power_roi(:, :, 3), RT.unsteady.all.mean(:), [], C);
+        % P_pred_elas_unsteady{ia,ib} = permtest_predict_behavior_psd_elasticnet(psd_range_z(ib).power_roi(:, :, 3), RT.unsteady.all.mean(:), [], C);
     end
-    save('result.mat')
+    % cd(P.results.cache)
+    % save('result0321.mat')
 end
 
-% for visualization
-label = 1:360;
-label(C.data.excluderoi) = [];
-
-for ia = 1:length(alpha_list)
-    for ib = 1:4
-        Q2_elas_steady(ia,ib) = S_pred_elas_steady{ia, ib}.eval.Q2_enet;
-        Q2_elas_unsteady(ia,ib) = S_pred_elas_unsteady{ia, ib}.eval.Q2_enet;
-
-        MSE_elas_steady(ia,ib) = S_pred_elas_steady{ia, ib}.eval.mse_enet;
-        MSE_elas_unsteady(ia,ib) = S_pred_elas_unsteady{ia, ib}.eval.mse_enet;
-
-        P_elas_steady(ia,ib) = S_pred_elas_steady{ia, ib}.eval.p_enet;
-        P_elas_unsteady(ia,ib) = S_pred_elas_unsteady{ia, ib}.eval.p_enet;
-
-        P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
-        P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
-
-        beta_elas_steady(ia,ib,:) = P_pred_elas_steady{ia, ib}.obs.beta_mean;
-        beta_elas_unsteady(ia,ib,:) = P_pred_elas_unsteady{ia, ib}.obs.beta_mean;
-
-        a_multicorrect(P_pred_elas_steady{ia, ib}.obs.beta_mean(label), P_pred_elas_steady{ia, ib}.p.sel_freq_1s(label),C);
-
-        RT_pred_unsteady(ia,ib,:) = S_pred_elas_steady{ia, ib}.pred.enet;
-        RT_pred_unsteady(ia,ib,:) = S_pred_elas_unsteady{ia, ib}.pred.enet;
-    end
-end
-
-RT_band1 = squeeze(beta_elas_steady(10,2,:));
-RT_band2 = squeeze(RT_pred_steady(10,2,:));
-RT_band3 = squeeze(RT_pred_steady(10,3,:));
-
-roi2cifti_glasser(squeeze(beta_elas_steady(8,1,:)),path,['beta_elas_band1']);
-roi2cifti_glasser(squeeze(beta_elas_steady(10,2,:)),path,['beta_elas_band2']);
-roi2cifti_glasser(squeeze(beta_elas_steady(10,3,:)),path,['beta_elas_band3']);
-
-scatter(squeeze(RT_pred_steady(8,4,:)),RT.steady.all.mean(:))
-std(squeeze(RT_pred_steady(8,4,:)))
-std(RT.steady.all.mean(:))
-
-r = a_multicorrect(squeeze(R_elas_unsteady(:,1,:)),squeeze(P_elas_unsteady(:,1,:)),C);
-r2 = a_multicorrect(R_elas_steady,P_elas_steady,C);
+% % for visualization
+% label = 1:360;
+% label(C.data.excluderoi) = [];
+% 
+% for ia = 1:length(alpha_list)
+%     for ib = 1:4
+%         Q2_elas_steady(ia,ib) = S_pred_elas_steady{ia, ib}.eval.Q2_enet;
+%         Q2_elas_unsteady(ia,ib) = S_pred_elas_unsteady{ia, ib}.eval.Q2_enet;
+% 
+%         MSE_elas_steady(ia,ib) = S_pred_elas_steady{ia, ib}.eval.mse_enet;
+%         MSE_elas_unsteady(ia,ib) = S_pred_elas_unsteady{ia, ib}.eval.mse_enet;
+% 
+%         P_elas_steady(ia,ib) = S_pred_elas_steady{ia, ib}.eval.p_enet;
+%         P_elas_unsteady(ia,ib) = S_pred_elas_unsteady{ia, ib}.eval.p_enet;
+% 
+%         P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
+%         P_pred_elas_steady{ia, ib}.obs.beta_mean(P_pred_elas_steady{ia, ib}.obs.sel_freq<0.7) = 0;
+% 
+%         beta_elas_steady(ia,ib,:) = P_pred_elas_steady{ia, ib}.obs.beta_mean;
+%         beta_elas_unsteady(ia,ib,:) = P_pred_elas_unsteady{ia, ib}.obs.beta_mean;
+% 
+%         a_multicorrect(P_pred_elas_steady{ia, ib}.obs.beta_mean(label), P_pred_elas_steady{ia, ib}.p.sel_freq_1s(label),C);
+% 
+%         RT_pred_unsteady(ia,ib,:) = S_pred_elas_steady{ia, ib}.pred.enet;
+%         RT_pred_unsteady(ia,ib,:) = S_pred_elas_unsteady{ia, ib}.pred.enet;
+%     end
+% end
+% 
+% RT_band1 = squeeze(beta_elas_steady(10,2,:));
+% RT_band2 = squeeze(RT_pred_steady(10,2,:));
+% RT_band3 = squeeze(RT_pred_steady(10,3,:));
+% 
+% roi2cifti_glasser(squeeze(beta_elas_steady(8,1,:)),path,['beta_elas_band1']);
+% roi2cifti_glasser(squeeze(beta_elas_steady(10,2,:)),path,['beta_elas_band2']);
+% roi2cifti_glasser(squeeze(beta_elas_steady(10,3,:)),path,['beta_elas_band3']);
+% 
+% scatter(squeeze(RT_pred_steady(8,4,:)),RT.steady.all.mean(:))
+% std(squeeze(RT_pred_steady(8,4,:)))
+% std(RT.steady.all.mean(:))
+% 
+% r = a_multicorrect(squeeze(R_elas_unsteady(:,1,:)),squeeze(P_elas_unsteady(:,1,:)),C);
+% r2 = a_multicorrect(R_elas_steady,P_elas_steady,C);
 
 
 %% compare with GLM (steady + unsteady)
@@ -210,47 +212,48 @@ for ic = 1:numel(condList)
         C.ml.enet_alpha_grid = alpha_list(ia);
         S_pred_elas_glm_L.(cond){ia} = predict_behavior_psd_elasticnet(res.beta1, y, [], C);
         S_pred_elas_glm_R.(cond){ia} = predict_behavior_psd_elasticnet(res.beta2, y, [], C);
-        P_pred_elas_glm_L.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta1, y, [], C, 1000);
-        P_pred_elas_glm_R.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta2, y, [], C, 1000);
+        P_pred_elas_glm_L.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta1, y, [], C);
+        P_pred_elas_glm_R.(cond){ia} = permtest_predict_behavior_psd_elasticnet(res.beta2, y, [], C);
     end
+    cd(P.results.cache)
     save('result.mat')
 end
 
-for ia = 1:length(alpha_list)
-    MSE_elas_steady_glm(ia,1) = S_pred_elas_glm_L.steady{1, ia}.eval.mse_enet;
-    MSE_elas_steady_glm(ia,2) = S_pred_elas_glm_R.steady{1, ia}.eval.mse_enet;
-
-    MSE_elas_unsteady_glm(ia,1) = S_pred_elas_glm_L.unsteady{1, ia}.eval.mse_enet;
-    MSE_elas_unsteady_glm(ia,2) = S_pred_elas_glm_R.unsteady{1, ia}.eval.mse_enet;
-
-    RT_pred_steady_glm(ia,:,1) =  S_pred_elas_glm_L.steady{1, ia}.pred.enet;
-    RT_pred_steady_glm(ia,:,2) =  S_pred_elas_glm_R.steady{1, ia}.pred.enet;
-end
-
-
-x1 = RT_pred_steady_glm(10,:,1)';
-x2 = squeeze(RT_pred_steady(10,2,:));
-
-psd_glm_stat = paired_perm_loss(x1, x2, RT.steady.all.mean(:), 1000);
-
-scatter(x1,RT.steady.all.mean(:))
-  
-psd_out_glm = cat(4,psd_out(:,:,:,1),PSD_OUT.steady,PSD_OUT.unsteady);
-
-% Frequency ranges (index-based)
-
-psd_range_glm = mean_psd_by_range(psd_out_glm, ranges, range_labels);
-stats_glm     = psd_range_ttest(psd_range_glm);
+% for ia = 1:length(alpha_list)
+%     MSE_elas_steady_glm(ia,1) = S_pred_elas_glm_L.steady{1, ia}.eval.mse_enet;
+%     MSE_elas_steady_glm(ia,2) = S_pred_elas_glm_R.steady{1, ia}.eval.mse_enet;
+% 
+%     MSE_elas_unsteady_glm(ia,1) = S_pred_elas_glm_L.unsteady{1, ia}.eval.mse_enet;
+%     MSE_elas_unsteady_glm(ia,2) = S_pred_elas_glm_R.unsteady{1, ia}.eval.mse_enet;
+% 
+%     RT_pred_steady_glm(ia,:,1) =  S_pred_elas_glm_L.steady{1, ia}.pred.enet;
+%     RT_pred_steady_glm(ia,:,2) =  S_pred_elas_glm_R.steady{1, ia}.pred.enet;
+% end
 
 
-mean_psd_steady_glm = mean(PSD_OUT.steady,2);
-mean_psd_steady_glm = mean(mean_psd_steady_glm,3);
-sd_psd_steady_glm = std(mean_psd_steady_glm,0,3);
-
-
-mean_psd_unsteady_glm = mean(PSD_OUT.unsteady,2);
-mean_psd_unsteady_glm = mean(mean_psd_unsteady_glm,3);
-sd_psd_unsteady_glm = std(mean_psd_unsteady_glm,0,3);
+% x1 = RT_pred_steady_glm(10,:,1)';
+% x2 = squeeze(RT_pred_steady(10,2,:));
+% 
+% psd_glm_stat = paired_perm_loss(x1, x2, RT.steady.all.mean(:), 1000);
+% 
+% scatter(x1,RT.steady.all.mean(:))
+% 
+% psd_out_glm = cat(4,psd_out(:,:,:,1),PSD_OUT.steady,PSD_OUT.unsteady);
+% 
+% % Frequency ranges (index-based)
+% 
+% psd_range_glm = mean_psd_by_range(psd_out_glm, ranges, range_labels);
+% stats_glm     = psd_range_ttest(psd_range_glm);
+% 
+% 
+% mean_psd_steady_glm = mean(PSD_OUT.steady,2);
+% mean_psd_steady_glm = mean(mean_psd_steady_glm,3);
+% sd_psd_steady_glm = std(mean_psd_steady_glm,0,3);
+% 
+% 
+% mean_psd_unsteady_glm = mean(PSD_OUT.unsteady,2);
+% mean_psd_unsteady_glm = mean(mean_psd_unsteady_glm,3);
+% sd_psd_unsteady_glm = std(mean_psd_unsteady_glm,0,3);
 
 %% compare with FC
 [r_mat, p_mat] = calculate_corr_filtered(P, C);
@@ -272,13 +275,16 @@ delong_tbl_fc = pairwise_delong_multiclass(S_svm_fc, svm_tags_fc);
 for ia = 1:length(alpha_list)
     C.ml.enet_alpha_grid =  alpha_list(ia);
     S_pred_elas_fc{ia} = predict_behavior_psd_elasticnet( ...
-        r_mat(:,:,:,2), RT.steady.all.mean(:), [], C);
-    
+    r_mat(:,:,:,2), RT.steady.all.mean(:), [], C);
+    % P_pred_elas_glm_L.(cond){ia} = permtest_predict_behavior_psd_elasticnet(r_mat(:,:,:,2), RT.steady.all.mean(:), [], C, 1000);
+    % 
 end
 
 for ia = 1:length(alpha_list)
     MSE_elas_steady_fc(ia) = S_pred_elas_fc{ia}.eval.mse_enet;
     RT_pred_steady_fc(ia,:) =  S_pred_elas_fc{ia}.pred.enet;
+
+ 
 end
 
 

@@ -16,7 +16,8 @@ assert(iscolumn(all_behav) && numel(all_behav)==nSubj, 'all_behav must be [nSubj
 % --------- config defaults ----------
 ml = C.ml;
 alpha_grid = def(ml,'enet_alpha_grid',[0.05 0.1 0.2 0.5 0.8 1.0]); alpha_grid = alpha_grid(:)';
-lambda_grid = def(ml,'enet_lambda_grid',[]); if ~isempty(lambda_grid), lambda_grid=lambda_grid(:); end
+lambda_grid = def(ml,'enet_lambda_grid',logspace(-3, 1, 100));
+lambda_grid = lambda_grid(:);
 Kfold   = def(ml,'enet_kfold',5);
 nRepeat = def(ml,'enet_repeat',10);
 seed0   = def(ml,'enet_seed',1);
@@ -225,29 +226,37 @@ end
 function best = select_enet_repeated_cv(XtrZ, ytr, alpha_grid, lambda_grid, nFolds, ...
     nRepeat, seed0, leftout, add_int, use_1se, min_nnz)
 
-% collect proposals
-prop_a = []; prop_l = []; prop_mse = [];
-prop_beta = {}; prop_int = []; prop_nnz = [];
+% collect proposals for hyperparameter selection only
+prop_a   = [];
+prop_l   = [];
+prop_mse = [];
 
 for rr = 1:nRepeat
     rng(seed0 + 1000*leftout + rr, 'twister');
+
     n = numel(ytr);
-if nFolds >= n
-    cvp = cvpartition(n,'KFold',n);      % LOO, but lasso-compatible
-else
-    cvp = cvpartition(n,'KFold',nFolds);
-end
+    if nFolds >= n
+        cvp = cvpartition(n, 'KFold', n);   % LOO, but lasso-compatible
+    else
+        cvp = cvpartition(n, 'KFold', nFolds);
+    end
 
     for a = alpha_grid
-        args = {'Alpha',a,'CV',cvp,'Standardize',false,'Intercept',add_int};
-        if ~isempty(lambda_grid), args = [args, {'Lambda',lambda_grid}]; end
+        args = {'Alpha', a, 'CV', cvp, 'Standardize', false, 'Intercept', add_int};
+        if ~isempty(lambda_grid)
+            args = [args, {'Lambda', lambda_grid}];
+        end
+
         [B, FitInfo] = lasso(XtrZ, ytr, args{:});
 
         ii = FitInfo.IndexMinMSE;
-        if use_1se, ii = FitInfo.Index1SE; end
+        if use_1se
+            ii = FitInfo.Index1SE;
+        end
 
-        beta = B(:,ii);
+        beta = B(:, ii);
         nnz_beta = nnz(beta);
+
         if min_nnz > 0 && nnz_beta < min_nnz
             continue
         end
@@ -255,40 +264,60 @@ end
         prop_a(end+1,1)   = a;
         prop_l(end+1,1)   = FitInfo.Lambda(ii);
         prop_mse(end+1,1) = FitInfo.MSE(ii);
-        prop_beta{end+1,1} = beta;
-        prop_int(end+1,1) = FitInfo.Intercept(ii);
-        prop_nnz(end+1,1) = nnz_beta;
     end
 end
 
-% fallback: if min_nnz was too strict, rerun once with min_nnz=0
+% fallback: if min_nnz was too strict, rerun once with min_nnz = 0
 if isempty(prop_mse) && min_nnz > 0
     best = select_enet_repeated_cv(XtrZ, ytr, alpha_grid, lambda_grid, nFolds, ...
         nRepeat, seed0, leftout, add_int, use_1se, 0);
     return
 end
 
+% if still empty, return a degenerate model instead of crashing
+if isempty(prop_mse)
+    best = struct();
+    best.alpha     = NaN;
+    best.lambda    = NaN;
+    best.mse       = NaN;
+    best.beta      = zeros(size(XtrZ,2), 1);
+    if add_int
+        best.intercept = mean(ytr, 'omitnan');
+    else
+        best.intercept = 0;
+    end
+    best.nnz       = 0;
+    return
+end
+
 % aggregate by unique (alpha, lambda) pair; choose smallest mean MSE
 pair = [prop_a, prop_l];
-[pair_u,~,ic] = unique(pair,'rows','stable');
+[pair_u, ~, ic] = unique(pair, 'rows', 'stable');
 mean_mse = accumarray(ic, prop_mse, [], @mean);
 
 [~, iu] = min(mean_mse);
-best_pair = pair_u(iu,:);
+best_alpha  = pair_u(iu, 1);
+best_lambda = pair_u(iu, 2);
 
-% pick one snapshot among matching proposals (smallest single-run MSE)
-match = (prop_a==best_pair(1)) & (prop_l==best_pair(2));
-idxs = find(match);
-[~, k] = min(prop_mse(match));
-pick = idxs(k);
+% -----------------------------
+% final refit on the FULL outer-train set
+% -----------------------------
+[Bfinal, FitFinal] = lasso(XtrZ, ytr, ...
+    'Alpha', best_alpha, ...
+    'Lambda', best_lambda, ...
+    'Standardize', false, ...
+    'Intercept', add_int);
+
+beta_final = Bfinal(:,1);
+nnz_final  = nnz(beta_final);
 
 best = struct();
-best.alpha     = prop_a(pick);
-best.lambda    = prop_l(pick);
+best.alpha     = best_alpha;
+best.lambda    = best_lambda;
 best.mse       = mean_mse(iu);
-best.beta      = prop_beta{pick};
-best.intercept = prop_int(pick);
-best.nnz       = prop_nnz(pick);
+best.beta      = beta_final;
+best.intercept = FitFinal.Intercept;
+best.nnz       = nnz_final;
 end
 
 function v = def(S,f,default_v)

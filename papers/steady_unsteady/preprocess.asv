@@ -1,34 +1,4 @@
-clear; clc;
-
-%% dilate the cifti file to aviod 0 values
-wb = '"D:\Software\workbench\bin_windows64\wb_command.exe"';
-
-root_dir = 'F:\Data\Steady-unsteady\BIDS_derivative';
-
-left_surf  = 'D:\OneDrive\Code\Common\Mask\Glasser_Template\Q1-Q6_RelatedParcellation210.L.midthickness_MSMAll_2_d41_WRN_DeDrift.32k_fs_LR.surf.gii';
-right_surf = 'D:\OneDrive\Code\Common\Mask\Glasser_Template\Q1-Q6_RelatedParcellation210.R.midthickness_MSMAll_2_d41_WRN_DeDrift.32k_fs_LR.surf.gii';
-
-files = dir(fullfile(root_dir, 'sub-*', 'ses-*', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
-
-for i = 1:numel(files)
-    in_file = fullfile(files(i).folder, files(i).name);
-    out_file = fullfile(files(i).folder, ...
-        strrep(files(i).name, '.dtseries.nii', '_dilate.dtseries.nii'));
-
-    % if isfile(out_file)
-    %     continue
-    % end
-
-    cmd = sprintf([ ...
-        '%s -cifti-dilate "%s" COLUMN 18 18 "%s" ' ...
-        '-left-surface "%s" -right-surface "%s"'], ...
-        wb, in_file, out_file, left_surf, right_surf);
-
-    fprintf('Running %d / %d\n', i, numel(files));
-    system(cmd);
-end
-
-%% Extract ROI signals
+clear
 
 subj_path = 'F:\Data\Steady-unsteady\BIDS_derivative';
 out_root  = 'E:\Steady-Unsteady\roisignals0322';

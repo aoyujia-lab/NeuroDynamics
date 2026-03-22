@@ -23,7 +23,8 @@ P.data.roisignals = fullfile(data_root, 'roisignals_gsr');
 P.data.behav = fullfile(data_root, 'Results', 'Behavior');
 
 % ---- Output locations inside the repository ----
-P.results.root = fullfile(paper_dir, 'results');
+results_root = 'E:\DATA\Steady-unsteady\Results';
+P.results.root = results_root;
 P.results.cache = fullfile(P.results.root, 'cache');
 P.results.fig = fullfile(P.results.root, 'figures');
 

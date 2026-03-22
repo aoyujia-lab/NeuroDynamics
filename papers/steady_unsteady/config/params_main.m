@@ -15,7 +15,7 @@ C.data.FS        = 1/C.data.TR;          % Hz
 C.data.nTR       = 290;          % 
 C.data.nROI        = 360;          % 
 C.data.excludesubjects  = [2,35];        % or a vector: [1 3 5]
-C.data.excluderoi  = [120,200];
+C.data.excluderoi  = [120];
 C.data.sesnum = 3;
 
 
@@ -31,7 +31,7 @@ C.ml.Kfallback = 20;
 C.ml.svmlearner = 'default';
 C.ml.cvMode = 'LOO';
 C.ml.corr_option = 1;
-C.ml.enet_alpha_grid =  [0.5];
+C.ml.enet_alpha_grid =  1;
 C.ml.enet_kfold    = 5;
 C.ml.enet_lambda_grid = []; 
 C.ml.enet_repeat=10;
@@ -86,7 +86,7 @@ C.jr.G = 0.5;
 
 %% ===== 统计分析参数 =====
 C.stats.alpha   = 0.05;
-C.stats.n_perm  = 5000;
+C.stats.n_perm  = 2000;
 C.stats.multicorrect = 'BH';
 
 
