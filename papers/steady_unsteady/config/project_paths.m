@@ -19,7 +19,7 @@ P.code.config = config_dir;
 data_root = 'E:\DATA\Steady-unsteady';
 P.data.root = data_root;
 P.data.raw = fullfile(data_root, 'raw');
-P.data.roisignals = fullfile(data_root, 'roisignals_gsr');
+P.data.roisignals = fullfile(data_root, 'roisignals0322');
 P.data.behav = fullfile(data_root, 'Results', 'Behavior');
 
 % ---- Output locations inside the repository ----

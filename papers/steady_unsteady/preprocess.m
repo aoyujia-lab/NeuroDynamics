@@ -31,7 +31,7 @@ end
 %% Extract ROI signals
 
 subj_path = 'F:\Data\Steady-unsteady\BIDS_derivative';
-out_root  = 'E:\Steady-Unsteady\roisignals0322';
+out_root  = 'E:\DATA\Steady-unsteady\roisignals0322';
 
 subj_file = dir(fullfile(subj_path, 'sub*'));
 

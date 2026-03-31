@@ -9,12 +9,8 @@ C = params_main();
 %% Power redistribution
 
 [psd_out, psd_out_z, freq_out] = calculate_psd(P, C);
-[tsnr_out, tsnr_mean] = calculate_tsnr(P, C);
 
-mean_psd_roi = squeeze(mean(mean_psd_brain(118:120,:,:), 1));
-mean_tsnr = squeeze(mean(tsnr_out,1));
 
-scatter(mean_psd_roi(:,2),mean_tsnr(:,2))
 % PSD summary across ROIs
 mean_psd_brain = squeeze(mean(psd_out, 2));           % [nFreq x nSubj x nSes]
 mean_psd_subj  = squeeze(mean(mean_psd_brain, 2));    % [nFreq x nSes]
@@ -69,16 +65,7 @@ delong_tbl = pairwise_delong_multiclass(S_svm, range_labels);
 
 % ---- Behavior prediction ----
 RT = calc_rt(P, C);
-
-x = RT.steady.all.cv(:);
-y = RT.unsteady.all.cv(:);
-
-stats_sd = paired_permutation_ttest(x, y, 10000);
-
 T_behav = compare_steady_unsteady_from_R(RT);
-T = compare_steady_unsteady_signedrank(RT);
-
-
 nBand = numel(ranges);
 alpha_list = [0.05 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.95];
 

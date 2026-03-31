@@ -89,7 +89,7 @@ for si = 1:numel(sweepNames)
         Ci.jr.seed    = i1;
 
         % ===== task =====
-        [s0_out, ~, ~, ~, ~] = jansenrit_RK2_network(M, stim_task, Ci);
+        [s0_out, ~, ~, ~, ~] = jansenrit_Euler_network(M, stim_task, Ci);
 
         u = s0_out;   % expected: (T x nnodes) or (T x 1)
         if isvector(u)
@@ -128,7 +128,8 @@ for si = 1:numel(sweepNames)
     % ===== Periodogram PSD =====
     [psd_task, f] = periodogram(x_task_valid, [], nfft, fs);
 
-    range = find(f > 0);
+    [~, idx01] = min(abs(f - 0.01));
+    range = idx01:numel(f);
 
     psd_task = psd_task(range, :) ./ sum(psd_task(range, :), 1);
     f        = f(range);

@@ -14,15 +14,19 @@ C.data.TR        = 2.0;          % seconds
 C.data.FS        = 1/C.data.TR;          % Hz
 C.data.nTR       = 290;          % 
 C.data.nROI        = 360;          % 
-C.data.excludesubjects  = [2,35];        % or a vector: [1 3 5]
-C.data.excluderoi  = [120];
+ C.data.excludesubjects  = [2,35];        % or a vector: [1 3 5]
+% C.data.excludesubjects  = [2,9,17,35];        % or a vector: [1 3 5]
+C.data.excluderoi  = [];
 C.data.sesnum = 3;
+C.data.GSR = 1;
+
+C.preproc.band_cutoff = [0.01 0.1];
 
 
 %% ===== 频谱分析参数 =====
 C.psd.method    = 'periodogram';
-C.psd.win_sec   = ones(240,1);           % window length in seconds
-C.psd.overlap   = 120;           % fraction
+C.psd.win_sec   = [];           % window length in seconds
+C.psd.overlap   = [];           % fraction
 C.psd.nfft   = 512;
 
 %% ===== 机器学习参数 =====
@@ -32,7 +36,7 @@ C.ml.svmlearner = 'default';
 C.ml.cvMode = 'LOO';
 C.ml.corr_option = 1;
 C.ml.enet_alpha_grid =  1;
-C.ml.enet_kfold    = 5;
+C.ml.enet_kfold    = 10;
 C.ml.enet_lambda_grid = []; 
 C.ml.enet_repeat=10;
 
@@ -52,7 +56,7 @@ C.jr.dt        = 1e-3;
 C.jr.teq       = 60;
 C.jr.tmax      = 660;
 C.jr.downsamp  = 1;
-C.jr.seed      = 0;
+C.jr.seed      = 1;
 C.jr.verbose   = false;
 C.jr.returnBurn = false;
 
@@ -81,8 +85,8 @@ C.jr.r0 = 0.56;
 C.jr.r1 = 0.56;
 C.jr.r2 = 0.56;
 
-C.jr.stim = 0.5;
-C.jr.G = 0.5; 
+C.jr.stim = 0.8;
+C.jr.G = 1; 
 
 %% ===== 统计分析参数 =====
 C.stats.alpha   = 0.05;

@@ -52,7 +52,11 @@ for isubj = 1:nSubj
     for ises = 1:numel(ses_dir)
         fmat = fullfile(P.data.roisignals, subj_dir(isubj).name, ses_dir(ises).name, 'roisignals.mat');
         S = load(fmat);                 % expects S.roisignals
-        roisignals = S.roisignals;      % [ROI x T]
+        if C.data.GSR == 1
+            roisignals = S.roisignals_GSR;    % [ROI x T]
+        else
+            roisignals = S.roisignals_noGSR;    % [ROI x T]
+        end
 
         % ---- keep only selected ROIs ----
         roisignals = roisignals(roi_keep, :);  % [nROI_keep x T]

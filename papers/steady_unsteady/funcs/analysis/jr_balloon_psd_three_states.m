@@ -74,7 +74,8 @@ R1 = run_one_subject(C0, dt, ds_bold, fs, nfft, hrf, ...
 f     = R1.f;
 nFreq = numel(f);
 nROI  = size(R1.psd_rest, 2);
-range = find(f >= 0);
+[~, idx01] = min(abs(f - 0.01));
+range = idx01:numel(f);
 
 % Time-domain dims
 nT_rest     = size(R1.x_rest, 2);
@@ -139,7 +140,7 @@ if nSubj > 1
     parfor s = 2:nSubj
         C1 = C;
         C1.jr.verbose = false;
-        C1.jr.seed    = randi(100000);
+        C1.jr.seed    = s;
 
         Rs = run_one_subject(C1, dt, ds_bold, fs, nfft, hrf, ...
             tspan, teq, intensity, pulse_duration, pulse_interval1, ...
@@ -250,7 +251,7 @@ function R = run_one_subject(Ci, dt, ds_bold, fs, nfft, hrf, ...
     ts_st_full_in, ts_un_full_in, ds_time)
 
 % -------- REST --------
-[s0_out, ~, ~, ~, ~] = jansenrit_RK2_network(1, [], Ci);
+[s0_out, ~, ~, ~, ~] = jansenrit_Euler_network(1, [], Ci);
 bold_dt = balloon_from_neural(s0_out', dt);
 x_rest  = ds_time(bold_dt);
 
@@ -262,7 +263,7 @@ else
     ts_st_full = ts_st_full_in;
 end
 
-[s0_out, ~, ~, ~, ~] = jansenrit_RK2_network(1, ts_st_full, Ci);
+[s0_out, ~, ~, ~, ~] = jansenrit_Euler_network(1, ts_st_full, Ci);
 bold_dt  = balloon_from_neural(s0_out', dt);
 x_steady = ds_time(bold_dt);
 
@@ -275,7 +276,7 @@ else
     ts_un_full = ts_un_full_in;
 end
 
-[s0_out, ~, ~, ~, ~] = jansenrit_RK2_network(1, ts_un_full, Ci);
+[s0_out, ~, ~, ~, ~] = jansenrit_Euler_network(1, ts_un_full, Ci);
 bold_dt    = balloon_from_neural(s0_out', dt);
 x_unsteady = ds_time(bold_dt);
 

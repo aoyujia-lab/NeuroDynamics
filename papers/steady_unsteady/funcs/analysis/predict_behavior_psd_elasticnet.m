@@ -16,7 +16,7 @@ assert(iscolumn(all_behav) && numel(all_behav)==nSubj, 'all_behav must be [nSubj
 % --------- config defaults ----------
 ml = C.ml;
 alpha_grid = def(ml,'enet_alpha_grid',[0.05 0.1 0.2 0.5 0.8 1.0]); alpha_grid = alpha_grid(:)';
-lambda_grid = def(ml,'enet_lambda_grid',logspace(-3, 1, 100));
+lambda_grid = def(ml,'enet_lambda_grid',[]);
 lambda_grid = lambda_grid(:);
 Kfold   = def(ml,'enet_kfold',5);
 nRepeat = def(ml,'enet_repeat',10);
