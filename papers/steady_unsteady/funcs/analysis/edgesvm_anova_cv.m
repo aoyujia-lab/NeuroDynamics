@@ -46,7 +46,7 @@ for c = 1:nCond
     end
 end
 
-% 与这个顺序一致：cond block + subj
+% Keep consistent with this order: cond block + subj
 subj_id = repmat((1:nSub)', nCond, 1);
 cond_id = repelem((1:nCond)', nSub);
 

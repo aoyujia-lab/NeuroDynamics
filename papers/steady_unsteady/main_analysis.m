@@ -60,8 +60,8 @@ end
 
 max_val  = max(all_vals);
 min_val  = min(all_vals);
-min_pos  = min(all_vals(all_vals > 0));   % 正值中最小
-max_neg  = max(all_vals(all_vals < 0));   % 负值中最大（绝对值最小的负数）
+min_pos  = min(all_vals(all_vals > 0));   % Smallest positive value
+max_neg  = max(all_vals(all_vals < 0));   % Largest negative value (negative number with smallest absolute value)
 
 %% machine learning
 
@@ -169,14 +169,14 @@ for ic = 1:numel(condList)
             ses = 'ses-3';
 
         case 'rest_steady'
-            % 用steady的设计矩阵，但跑ses-1（resting-state）
+            % Use the steady design matrix, but run ses-1 (resting-state)
             steadySpec.L_onsets = 0:12:C.glm.totalDuration;
             steadySpec.R_onsets = 2:8:C.glm.totalDuration;
             X = build_design_from_onsets_steady(steadySpec.L_onsets, steadySpec.R_onsets, C);
             ses = 'ses-1';
 
         case 'rest_unsteady'
-            % 用unsteady的设计矩阵，但跑ses-1（resting-state）
+            % Use the unsteady design matrix, but run ses-1 (resting-state)
             path_unsteady = 'E:\DATA\Steady-unsteady\实验与被试\unsteady_3';
             design_matrix = build_design_from_xls(path_unsteady);
             X = design_matrix(11:end,:);
@@ -198,13 +198,13 @@ for ic = 1:numel(condList)
     % ----------------------------
     % 4) ROI-wise ttest + correction + visualization
     % ----------------------------
-    % rest条件不做activation的ttest（beta无实际意义），跳过
+    % Skip activation t-test for rest condition (beta has no practical meaning)
     if ismember(cond, {'rest_steady', 'rest_unsteady'})
         TSTAT.(cond).beta1 = nan(size(res.raw.beta(:, :, 1) ,1),1);
         TSTAT.(cond).beta2 = nan(size(res.raw.beta(:, :, 2) ,1),1);
         PCORR.(cond).beta1  = [];
         PCORR.(cond).beta2  = [];
-        continue  % 直接进入下一个cond
+        continue  % Jump directly to the next condition
     end
 
     nROI = size(res.raw.residuals,2);
@@ -635,7 +635,7 @@ oa  = [178:180, 358:360];
 networks      = {vis, smn, co, da, lan, fpn, aud, dmn, mmo, oa};
 network_names = {'vis','smn','co','da','lan','fpn','aud','dmn','mmo','oa'};
 
-freq_idx = 1:32;   % <-- 在这里修改
+freq_idx = 1:32;   % <-- Modify here
 
 %% Alpha
 PSD_prob_task_alpha = PSD_raw_task_alpha(11:end, :, :);
@@ -671,22 +671,22 @@ name_list = {glasser_L.diminfo{1,2}.maps.table.name};
 name_list = name_list(2:end)';
 
 order1 = {'V1', 'ProS', 'DVT', 'MST', 'V6', 'V2', 'V3', 'V4', 'V8', 'V3A', 'V7', 'IPS1', 'FFC', 'V3B', 'LO1', 'LO2', 'PIT', 'MT', 'LIPv', 'VIP', 'PH', 'V6A', 'VMV1', 'VMV3', 'V4t', 'FST', 'V3CD', 'LO3', 'VMV2', 'VVC', '4', '3b', '5m', '5L', '24dd', '24dv', '7AL', '7PC', '1', '2', '3a', '6d', '6mp', '6v', 'OP4', 'OP1', 'OP2-3', 'FOP2', 'Ig'}';
-% 先去掉 L_ 前缀和 _ROI 后缀
+% First remove the L_ prefix and _ROI suffix
 rois_clean = regexprep(name_list, '^L_|_ROI$', '');
 
-% 找order1中每个元素在name_list中的位置（1-based索引）
+% Find the position of each element in order1 within name_list (1-based index)
 [~, idx_in_atlas] = ismember(order1, rois_clean);
 
-% 检查未匹配的
+% Check unmatched entries
 missing = order1(idx_in_atlas == 0);
 if ~isempty(missing)
-    disp('未匹配的区域：');
+    disp('Unmatched regions:');
     disp(missing);
 end
 
-% 获取对应的key值（key从0开始，所以idx_in_atlas - 1）
+% Get corresponding key values (keys start from 0, so use idx_in_atlas - 1)
 key_list = {glasser_L.diminfo{1,2}.maps.table.key};
-key_list = [key_list{2:end}];  % 去掉第一个'???'，转为数值数组
+key_list = [key_list{2:end}];  % Remove the first '???' and convert to a numeric array
 
 order1_keys = key_list(idx_in_atlas);
 order1_keys_sorted = sort(order1_keys);

@@ -4,12 +4,12 @@ function C = params_main()
 % Usage:
 %   C = params_main();
 
-%% ===== 基本信息（不影响结果，但非常有用） =====
+%% ===== Basic information (does not affect results, but very useful) =====
 C.project.name    = 'steady_unsteady';
 C.project.version = 'main_v1';
 C.project.date    = datestr(now);
 
-%% ===== 数据相关参数 =====
+%% ===== Data-related parameters =====
 C.data.TR        = 2.0;          % seconds
 C.data.FS        = 1/C.data.TR;          % Hz
 C.data.nTR       = 290;          % 
@@ -23,13 +23,13 @@ C.data.GSR = 1;
 C.preproc.band_cutoff = [0.01 0.1];
 
 
-%% ===== 频谱分析参数 =====
+%% ===== Spectral analysis parameters =====
 C.psd.method    = 'periodogram';
 C.psd.win_sec   = [];           % window length in seconds
 C.psd.overlap   = [];           % fraction
 C.psd.nfft   = 512;
 
-%% ===== 机器学习参数 =====
+%% ===== Machine learning parameters =====
 C.ml.alpha    = 1;
 C.ml.Kfallback = 20;
 C.ml.svmlearner = 'default';
@@ -44,14 +44,14 @@ C.ml.enet_repeat=10;
 %               2 Spearman corr
 %               3 Robust regression (edge-wise)
 %               4 Partial correlation (need cov)
-%% ===== GLM参数 =====
+%% ===== GLM parameters =====
 C.glm.totalDuration    = 600;     % seconds
 C.glm.numPoints        = 290;     % number of TRs
 C.glm.highResFactor    = 100;     % 0.01s resolution
 C.glm.pulseWidth       = 1;     % seconds
-C.glm.dropTR           = 10;      % 你原来用 design_matrix(11:end,:) => drop first 10 TRs
+C.glm.dropTR           = 10;      % Original code used design_matrix(11:end,:), i.e., drop first 10 TRs
 
-%% ===== Jansen-Rit 模型参数 =====
+%% ===== Jansen-Rit model parameters =====
 C.jr.dt        = 1e-3;
 C.jr.teq       = 60;
 C.jr.tmax      = 660;
@@ -90,7 +90,7 @@ C.jr.G = 1;
 
 
 
-%% ===== 统计分析参数 =====
+%% ===== Statistical analysis parameters =====
 C.stats.alpha   = 0.05;
 C.stats.n_perm  = 5000;
 C.stats.multicorrect = 'BH';
@@ -99,7 +99,7 @@ C.stats.perm_tail = 'two';
 
 C.preproc.band_cutoff = [0.008,0.25];
 
-%% ===== 输出与调试 =====
+%% ===== Output and debugging =====
 C.output.save_cache        = true;
 C.output.overwrite_cache   = false;
 C.output.verbose           = true;

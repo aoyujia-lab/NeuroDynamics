@@ -2,35 +2,35 @@ function out = paired_perm_loss(pred1, pred2, y, nPerm)
 % Paired sign-flip permutation test for difference in MSE.
 % + Bootstrap 95% CI for each model's MSE and for mean(MSE diff).
 %
-% pred1, pred2: [n x 1] 两个模型的预测值
-% y: [n x 1] 真实值
-% nPerm: 迭代次数，默认 10000
+% pred1, pred2: [n x 1] predictions from two models
+% y: [n x 1] ground-truth values
+% nPerm: number of iterations, default 10000
 
 if nargin < 4, nPerm = 10000; end
 
-% 强制转换为列向量
+% Force conversion to column vectors
 pred1 = pred1(:); pred2 = pred2(:); y = y(:);
 n = numel(y);
-assert(numel(pred1)==n && numel(pred2)==n, '输入向量长度不一致');
+assert(numel(pred1)==n && numel(pred2)==n, 'Input vector lengths are inconsistent');
 
-% 1. 计算各自的 MSE
+% 1. Compute each model's MSE
 se1 = (pred1 - y).^2;
 se2 = (pred2 - y).^2;
 mse1 = mean(se1);
 mse2 = mean(se2);
 
-% 2. 计算观测到的差异（Observed Statistic）
-d = se1 - se2; % 个体层面的误差差值
-T0 = mean(d);  % 即 mse1 - mse2
+% 2. Compute observed difference (Observed Statistic)
+d = se1 - se2; % Subject-level error difference
+T0 = mean(d);  % Equals mse1 - mse2
 
-% 3. 置换检验 (Permutation Test) - sign flip
+% 3. Permutation test - sign flip
 Tperm = zeros(nPerm, 1);
 for b = 1:nPerm
     s = (rand(n, 1) > 0.5) * 2 - 1; 
     Tperm(b) = mean(s .* d);
 end
 
-% 4. 计算双侧 P 值
+% 4. Compute two-sided p-value
 p = (sum(abs(Tperm) >= abs(T0)) + 1) / (nPerm + 1);
 
 % 5. Bootstrap 95% CI（paired resampling）
@@ -44,14 +44,14 @@ for b = 1:nBoot
     idx = randi(n, n, 1);          % bootstrap indices (paired)
     boot_mse1(b) = mean(se1(idx));
     boot_mse2(b) = mean(se2(idx));
-    boot_diff(b) = mean(d(idx));   % = boot_mse1 - boot_mse2 (但直接用 d 更干净)
+    boot_diff(b) = mean(d(idx));   % = boot_mse1 - boot_mse2 (using d directly is cleaner)
 end
 
 ci_mse1 = prctile(boot_mse1, [2.5 97.5]);
 ci_mse2 = prctile(boot_mse2, [2.5 97.5]);
 ci_meanDiff = prctile(boot_diff, [2.5 97.5]);
 
-% 填充输出结构体
+% Fill output struct
 out.mse1 = mse1;
 out.mse2 = mse2;
 

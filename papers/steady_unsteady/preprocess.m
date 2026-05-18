@@ -51,7 +51,7 @@ glasser_R = ciftiopen(template_path);
 
 label = unique(glasser_L.cdata);
 
-mean_FD = nan(length(subj_file), 10);  % 先给一个较大列数
+mean_FD = nan(length(subj_file), 10);  % Initialize with a larger number of columns
 
 for isubj = 1:length(subj_file)
     fprintf('Subject %d/%d: %s\n', isubj, length(subj_file), subj_file(isubj).name);
@@ -102,7 +102,7 @@ for isubj = 1:length(subj_file)
         nVertex = size(signals, 1);
         nTime   = size(signals, 2) - 1;
 
-        %% ---------------- noGSR: 顺序回归 ----------------
+        %% ---------------- noGSR: sequential regression ----------------
         out_signals = zeros(nVertex, nTime);
 
         for ivoxel = 1:nVertex
@@ -114,10 +114,10 @@ for isubj = 1:length(subj_file)
             out_signals(ivoxel, :) = r5;
         end
 
-        %% 保存 noGSR 用的 GS（可选）
+        %% Save GS for noGSR (optional)
         GS_noGSR = mean(out_signals, 1)';
 
-        %% ---------------- GSR: 在 noGSR 基础上再回归 GS ----------------
+        %% ---------------- GSR: regress GS on top of noGSR ----------------
         x_gs = [GS_noGSR, ones(size(GS_noGSR,1),1)];
         out_signals_gsr = zeros(size(out_signals));
 
