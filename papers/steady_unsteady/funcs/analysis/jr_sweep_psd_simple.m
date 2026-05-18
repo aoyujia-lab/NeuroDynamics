@@ -1,5 +1,5 @@
 function results = jr_sweep_psd_simple(M, C, sweepNames, pct, nSteps, sweepMode)
-% 极简 sweep: JR -> Balloon -> downsample -> Periodogram PSD -> corr
+% Minimal sweep: JR -> Balloon -> downsample -> Periodogram PSD -> corr
 %
 % sweepMode: 'steady' (default) | 'unsteady' | 'both'
 %
@@ -71,7 +71,7 @@ else
     nnodes = size(M, 1);
 end
 
-% ====== 预生成 stim ======
+% ====== Pre-generate stim ======
 if do_steady
     ts_steady   = make_steady_pulse(Nsim, dt, pulse_duration, pulse_interval1, intensity);
     stim_steady = [pad, ts_steady];
@@ -188,14 +188,14 @@ for si = 1:numel(sweepNames)
 
     % ---- save ----
     if strcmp(sweepMode, 'both')
-        % 两种条件都存，用子结构
+        % Store both conditions using sub-structures
         results.(pname).steady   = res_st;
         results.(pname).unsteady = res_un;
         results.(pname).param    = pvals;
         results.(pname).nBold    = nBold;
         results.(pname).crop_sec = crop_sec;
     elseif strcmp(sweepMode, 'steady')
-        % 保持与原版兼容的平坦结构
+        % Keep a flat structure compatible with the original version
         results.(pname).psd_task   = res_st.psd;
         results.(pname).R_task     = res_st.R;
         results.(pname).P_task     = res_st.P;
@@ -254,7 +254,7 @@ res.param = pvals_v;
 end
 
 
-% ================= helpers: stim 生成 =================
+% ================= helpers: stim generation =================
 function ts = make_steady_pulse(Nsim, dt, dur_s, interval_s, amp)
 ts = zeros(1, Nsim);
 

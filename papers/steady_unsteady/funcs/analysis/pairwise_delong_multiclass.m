@@ -75,7 +75,7 @@ function delong_tbl = pairwise_delong_multiclass(S_svm, svm_tags)
         end
     end
 
-    % ── FDR 分组校正：每个 condition（含 macro=0）单独校正 ───────────────
+    % -- FDR grouped correction: correct each condition separately (including macro=0) --
     allTbl       = struct2table(allR);
     allTbl.P_FDR = nan(height(allTbl), 1);
 
