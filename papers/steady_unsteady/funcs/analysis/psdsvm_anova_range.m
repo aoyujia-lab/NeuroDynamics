@@ -170,5 +170,5 @@ function S = psdsvm_anova_range(band_psd, C)
 
     S.data = struct('X',X,'y',y,'subj_id',subj_id,'cond_id',cond_id);
     S.cv = struct('y_pred',y_pred,'scores',scores,'featMask',featMask);
-    S.metrics = struct('AUC',AUC,'acc',acc);
+    S.metrics = struct('AUC', AUC, 'macro_AUC', mean(AUC), 'acc', acc);
 end

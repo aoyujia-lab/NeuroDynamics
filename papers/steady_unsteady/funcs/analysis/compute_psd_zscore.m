@@ -9,13 +9,13 @@ function [psd_out, f_sel] = compute_psd_zscore(C, res)
 %   psd_out : [nFreq x nROI x nSubj] normalized power spectrum
 %   f_sel   : selected frequency vector
 
-[nTime, nROI, nSubj] = size(res.residuals);
+[nTime, nROI, nSubj] = size(res.raw.residuals);
 psd_out = [];
 f_sel = [];
 
 for isubj = 1:nSubj
     for iroi = 1:nROI
-        ts = double(res.residuals(:, iroi, isubj));
+        ts = double(res.raw.residuals(:, iroi, isubj));
         ts = ts - mean(ts, 'omitnan');
 
         switch lower(C.psd.method)
@@ -26,7 +26,7 @@ for isubj = 1:nSubj
         end
 
         if isempty(f_sel)
-            idx_start = find(freq >= 0.01, 1, 'first');
+            [~, idx_start] = min(abs(freq - 0.01));
             idx_keep = idx_start:(numel(freq) - 1);
             f_sel = freq(idx_keep);
             psd_out = zeros(numel(f_sel), nROI, nSubj);

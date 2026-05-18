@@ -10,6 +10,7 @@ function [r_mat, p_mat] = calculate_corr_filtered(P, C)
 %       C.data.excludesubjects (optional)
 %       C.data.excluderoi (optional) e.g., [120 300]
 %       C.preproc.band_cutoff
+%        C.data.TR
 %
 % OUTPUT
 %   r_mat    : [nROI_keep x nROI_keep x nSubj x maxSes]
@@ -53,17 +54,22 @@ for isubj = 1:nSubj
         fmat = fullfile(P.data.roisignals, subj_dir(isubj).name, ses_dir(ises).name, 'roisignals.mat');
         S = load(fmat);                 % expects S.roisignals
         if C.data.GSR == 1
-            roisignals = S.roisignals_GSR;    % [ROI x T]
+            if isfield(S, 'roisignals_GSR')
+                roisignals = S.roisignals_GSR;
+            else
+                roisignals = S.roisignals;
+            end
         else
-            roisignals = S.roisignals_noGSR;    % [ROI x T]
+            roisignals = S.roisignals_noGSR;
         end
+
 
         % ---- keep only selected ROIs ----
         roisignals = roisignals(roi_keep, :);  % [nROI_keep x T]
 
         % ---- Filter ----
         % filter input: [T x ROI]
-        roisignals_filt = y_IdealFilter(roisignals', 2, C.preproc.band_cutoff); % [T x nROI_keep]
+        roisignals_filt = y_IdealFilter(roisignals', C.data.TR, C.preproc.band_cutoff); % [T x nROI_keep]
 
         % ---- Correlation ----
         [R, Pval] = corr(roisignals_filt, ...

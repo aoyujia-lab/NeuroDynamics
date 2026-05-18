@@ -47,6 +47,8 @@ end
 
 [nrois, ntime] = size(u);
 
+
+
 % ---------- initial conditions (match Python: [0.1, 1, 1, 1]) ----------
 s = zeros(nrois, ntime);  s(:,1) = 0.1;
 f = ones(nrois, ntime);

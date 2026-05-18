@@ -30,7 +30,7 @@ C.psd.overlap   = [];           % fraction
 C.psd.nfft   = 512;
 
 %% ===== 机器学习参数 =====
-C.ml.alpha    = 1;
+C.ml.alpha    = 0.01;
 C.ml.Kfallback = 20;
 C.ml.svmlearner = 'default';
 C.ml.cvMode = 'LOO';

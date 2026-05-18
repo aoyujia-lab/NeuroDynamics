@@ -3,21 +3,27 @@ clear; clc;
 %% dilate the cifti file to aviod 0 values
 wb = '"D:\Software\workbench\bin_windows64\wb_command.exe"';
 
-root_dir = 'F:\Data\Steady-unsteady\BIDS_derivative';
+root_dir = 'F:\Data\Philippdata\BIDS_derivative';
 
 left_surf  = 'D:\OneDrive\Code\Common\Mask\Glasser_Template\Q1-Q6_RelatedParcellation210.L.midthickness_MSMAll_2_d41_WRN_DeDrift.32k_fs_LR.surf.gii';
 right_surf = 'D:\OneDrive\Code\Common\Mask\Glasser_Template\Q1-Q6_RelatedParcellation210.R.midthickness_MSMAll_2_d41_WRN_DeDrift.32k_fs_LR.surf.gii';
 
-files = dir(fullfile(root_dir, 'sub-*', 'ses-*', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
+files = dir(fullfile(root_dir, 'sub-S*', 'ses-*', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
+files1 = dir(fullfile(root_dir, 'sub-S*', 'ses-2', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
+files3 = dir(fullfile(root_dir, 'sub-S*', 'ses-6', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
+files4 = dir(fullfile(root_dir, 'sub-S*', 'ses-7', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
+
+files = [files1; files3; files4];
+
 
 for i = 1:numel(files)
     in_file = fullfile(files(i).folder, files(i).name);
     out_file = fullfile(files(i).folder, ...
         strrep(files(i).name, '.dtseries.nii', '_dilate.dtseries.nii'));
 
-    % if isfile(out_file)
-    %     continue
-    % end
+    if isfile(out_file)
+         continue
+     end
 
     cmd = sprintf([ ...
         '%s -cifti-dilate "%s" COLUMN 18 18 "%s" ' ...
@@ -30,10 +36,10 @@ end
 
 %% Extract ROI signals
 
-subj_path = 'F:\Data\Steady-unsteady\BIDS_derivative';
-out_root  = 'E:\DATA\Steady-unsteady\roisignals0322';
+subj_path = 'F:\Data\Philippdata\BIDS_derivative';
+out_root  = 'E:\DATA\Zirui_data\roisignals_gsr';
 
-subj_file = dir(fullfile(subj_path, 'sub*'));
+subj_file = dir(fullfile(subj_path, 'sub-S*'));
 
 wbcmdPath = 'D:\Software\workbench\bin_windows64\wb_command';
 
@@ -52,7 +58,7 @@ for isubj = 1:length(subj_file)
 
     ses_file = dir(fullfile(subj_path, subj_file(isubj).name, 'ses*'));
 
-    for ises = 1:length(ses_file)
+    for ises = 1:7
         fprintf('  Session %d/%d: %s\n', ises, length(ses_file), ses_file(ises).name);
 
         func_path = fullfile(subj_path, subj_file(isubj).name, ses_file(ises).name, 'func');
@@ -99,7 +105,7 @@ for isubj = 1:length(subj_file)
         %% ---------------- noGSR: 顺序回归 ----------------
         out_signals = zeros(nVertex, nTime);
 
-        parfor ivoxel = 1:nVertex
+        for ivoxel = 1:nVertex
             [~, r,  ~, ~] = y_regress_ss(signals(ivoxel, 2:end)', x_csf(2:end, :));
             [~, r2, ~, ~] = y_regress_ss(r,                     x_wm(2:end, :));
             [~, r3, ~, ~] = y_regress_ss(r2,                    x_FD(2:end, :));
@@ -115,7 +121,7 @@ for isubj = 1:length(subj_file)
         x_gs = [GS_noGSR, ones(size(GS_noGSR,1),1)];
         out_signals_gsr = zeros(size(out_signals));
 
-        parfor ivoxel = 1:nVertex
+        for ivoxel = 1:nVertex
             [~, r6, ~, ~] = y_regress_ss(out_signals(ivoxel, :)', x_gs);
             out_signals_gsr(ivoxel, :) = r6;
         end
@@ -166,7 +172,7 @@ for isubj = 1:length(subj_file)
             mkdir(out_dir);
         end
 
-        save(fullfile(out_dir, 'roisignals_both.mat'), ...
+        save(fullfile(out_dir, 'roisignals.mat'), ...
             'roisignals_noGSR', 'roisignals_GSR', 'GS_noGSR', 'mean_FD');
     end
 end

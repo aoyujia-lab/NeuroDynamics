@@ -154,10 +154,10 @@ for step = 1:(Nsim-1)
             x1mx2_out(idx,:) = double(x1m);
         end
     end
-
-    if verbose && mod(step, stepsPer10s) == 0
-        fprintf('Elapsed time: %d seconds\n', round(step*dt));
-    end
+    % 
+    % if verbose && mod(step, stepsPer10s) == 0
+    %     fprintf('Elapsed time: %d seconds\n', round(step*dt));
+    % end
 end
 
 % ======================================================================
