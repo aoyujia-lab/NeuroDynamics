@@ -14,8 +14,8 @@ C.data.TR        = 2.0;          % seconds
 C.data.FS        = 1/C.data.TR;          % Hz
 C.data.nTR       = 290;          % 
 C.data.nROI        = 360;          % 
- C.data.excludesubjects  = [2,35];        % or a vector: [1 3 5]
-% C.data.excludesubjects  = [2,9,17,35];        % or a vector: [1 3 5]
+C.data.excludesubjects  = [2,35];        % or a vector: [1 3 5]
+
 C.data.excluderoi  = [];
 C.data.sesnum = 3;
 C.data.GSR = 1;
@@ -40,10 +40,6 @@ C.ml.enet_kfold    = 10;
 C.ml.enet_lambda_grid = []; 
 C.ml.enet_repeat=10;
 
-%   corr_option : 1 Pearson corr
-%               2 Spearman corr
-%               3 Robust regression (edge-wise)
-%               4 Partial correlation (need cov)
 %% ===== GLM parameters =====
 C.glm.totalDuration    = 600;     % seconds
 C.glm.numPoints        = 290;     % number of TRs
@@ -92,7 +88,7 @@ C.jr.G = 1;
 
 %% ===== Statistical analysis parameters =====
 C.stats.alpha   = 0.05;
-C.stats.n_perm  = 5000;
+C.stats.n_perm  = 10000;
 C.stats.multicorrect = 'BH';
 C.stats.perm_seed = 42; 
 C.stats.perm_tail = 'two'; 

@@ -32,7 +32,7 @@ function P = psdsvm_permtest(band_psd, C)
 %   P.meta          — nROI, nSub, nCond, nPerm
 
     % ---------- defaults ----------
-    nPerm = getOr(C.stats, 'n_perm',    1000);
+    nPerm = getOr(C.stats, 'n_perm',    10000);
     seed  = getOr(C.stats, 'perm_seed', 42);
     tail  = getOr(C.stats, 'perm_tail', 'right');
 
