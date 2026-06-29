@@ -1,4 +1,4 @@
-function [psd_out, psd_out_z, psd_out_raw, freq_out, win_center_sec, subj_dir] = calculate_psd_sliding_memsave(P, C)
+function [psd_out, psd_out_z, psd_out_raw, freq_out, win_center_sec, subj_dir] = calculate_psd_sliding(P, C)
 %CALCULATE_PSD_SLIDING_MEMSAVE Memory-efficient sliding-window PSD.
 %
 % OUTPUT
