@@ -9,12 +9,6 @@ left_surf  = 'D:\OneDrive\Code\Common\Mask\Glasser_Template\Q1-Q6_RelatedParcell
 right_surf = 'D:\OneDrive\Code\Common\Mask\Glasser_Template\Q1-Q6_RelatedParcellation210.R.midthickness_MSMAll_2_d41_WRN_DeDrift.32k_fs_LR.surf.gii';
 
 files = dir(fullfile(root_dir, 'sub-S*', 'ses-*', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
-files1 = dir(fullfile(root_dir, 'sub-S*', 'ses-2', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
-files3 = dir(fullfile(root_dir, 'sub-S*', 'ses-6', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
-files4 = dir(fullfile(root_dir, 'sub-S*', 'ses-7', 'func', '*space-fsLR_den-91k*_bold.dtseries.nii'));
-
-files = [files1; files3; files4];
-
 
 for i = 1:numel(files)
     in_file = fullfile(files(i).folder, files(i).name);
@@ -58,7 +52,7 @@ for isubj = 1:length(subj_file)
 
     ses_file = dir(fullfile(subj_path, subj_file(isubj).name, 'ses*'));
 
-    for ises = 1:7
+    for ises = 1:length(files)
         fprintf('  Session %d/%d: %s\n', ises, length(ses_file), ses_file(ises).name);
 
         func_path = fullfile(subj_path, subj_file(isubj).name, ses_file(ises).name, 'func');
@@ -114,7 +108,7 @@ for isubj = 1:length(subj_file)
             out_signals(ivoxel, :) = r5;
         end
 
-        %% Save GS for noGSR (optional)
+        %% Save GS for noGSR
         GS_noGSR = mean(out_signals, 1)';
 
         %% ---------------- GSR: regress GS on top of noGSR ----------------

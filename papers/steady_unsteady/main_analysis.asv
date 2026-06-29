@@ -300,7 +300,7 @@ for ia = 1:length(alpha_list)
     RT_pred_steady_glm2(ia,:,2) = S_pred_elas_glm_R.rest_unsteady{1, ia}.pred.enet;
 end
 
-% statistic for lfSSBR vs. GLM
+% statistic for lfSSBR 
 x1 = RT_pred_steady_glm(8,:,2)';
 x2 = squeeze(RT_pred_steady(19, 2, :));
 x3 = squeeze(RT_pred_steady(10, 3, :));
@@ -316,12 +316,12 @@ se11 = S_pred_elas_glm_L.rest_unsteady{1, 17}.eval.se_enet;
 se22 = S_pred_elas_steady{9, 1}.eval.se_enet;
 
 % Pairwise permutation loss tests
-psd_glm_stat1 = paired_perm_loss(x2,  x3,   RT.steady.all.mean(:), 10000);
-psd_glm_stat2 = paired_perm_loss(x1,  x11,  RT.steady.all.mean(:), 10000);
-psd_glm_stat3 = paired_perm_loss(x1,  x22,  RT.steady.all.mean(:), 10000);
-psd_glm_stat4 = paired_perm_loss(x2,  x11,  RT.steady.all.mean(:), 10000);
-psd_glm_stat5 = paired_perm_loss(x2,  x22,  RT.steady.all.mean(:), 10000);
-psd_glm_stat6 = paired_perm_loss(x11, x22,  RT.steady.all.mean(:), 10000);
+psd_glm_stat1 = paired_perm_loss(x2,  x3,   RT.steady.all.mean(:), 5000);
+psd_glm_stat2 = paired_perm_loss(x1,  x11,  RT.steady.all.mean(:), 5000);
+psd_glm_stat3 = paired_perm_loss(x1,  x22,  RT.steady.all.mean(:), 5000);
+psd_glm_stat4 = paired_perm_loss(x2,  x11,  RT.steady.all.mean(:), 5000);
+psd_glm_stat5 = paired_perm_loss(x2,  x22,  RT.steady.all.mean(:), 5000);
+psd_glm_stat6 = paired_perm_loss(x11, x22,  RT.steady.all.mean(:), 5000);
 
 P_FDR = mafdr([psd_glm_stat1.p, psd_glm_stat2.p, psd_glm_stat3.p, ...
                psd_glm_stat4.p, psd_glm_stat5.p, psd_glm_stat6.p], 'BHFDR', true);
@@ -335,14 +335,17 @@ psd_out_glm_unsteady     = cat(4, PSD_OUT.unsteady, PSD_OUT.rest_unsteady, psd_o
 psd_range_glm_unsteady   = mean_psd_by_range(psd_out_glm_unsteady, ranges, range_labels);
 stats_glm_unsteady       = psd_range_ttest(psd_range_glm_unsteady);
 
+
 mean_psd_steady_glm      = mean(mean(PSD_OUT.steady,      2), 3);
 mean_psd_rest_steady_glm = mean(mean(PSD_OUT.rest_steady, 2), 3);
 
 mean_psd_unsteady_glm      = mean(mean(PSD_OUT.unsteady,      2), 3);
+sd_psd_unsteady_glm        = std(mean_psd_unsteady_glm, 0, 3);
 mean_psd_rest_unsteady_glm = mean(mean(PSD_OUT.rest_unsteady, 2), 3);
 
 
 %% Jansen-Rit + Balloon-Windkessel model
+
 JR = jr_balloon_psd_three_states(C, 50);
 psd_rest      = mean(squeeze(JR.psd.pre.rest),    2);
 psd_st_pre    = mean(squeeze(JR.psd.pre.steady),  2);
@@ -367,6 +370,16 @@ psd_range_jr_post = mean_psd_by_range(psd_all_post, ranges, range_labels);
 stats      = psd_range_ttest(psd_range_jr);
 stats_post = psd_range_ttest(psd_range_jr_post);
 
+% Quick visual check
+loglog(psd_rest(11:end))
+hold on
+loglog(psd_st_pre)
+loglog(psd_unst_pre)
+
+loglog(psd_rest)
+hold on
+loglog(psd_st_post)
+loglog(psd_unst_post)
 
 results          = jr_sweep_psd_simple(1, C);
 results_unsteady = jr_sweep_psd_simple(1, C, [], [], [], 'unsteady');
@@ -374,7 +387,7 @@ results_unsteady = jr_sweep_psd_simple(1, C, [], [], [], 'unsteady');
 range{1} = 1:32;
 range{2} = 119;
 
-band = 1;
+band = 2;
 mean_psd_JR(:,1) = mean(results.a_vel.psd_task(range{band},:),        1);
 mean_psd_JR(:,2) = mean(results_unsteady.b_vel.psd_task(range{band},:),1);
 mean_psd_JR(:,3) = mean(results_unsteady.A.psd_task(range{band},:),   1);
@@ -397,6 +410,26 @@ for k = 1:8
     [r0104(k), pval0104(k)] = dcor_colwise(mean_psd_JR(:, k), param_JR(:, k));
 end
 
+[R2_quad, p_model, p_quad, mdl] = quadratic_r2(x, y);
+results.C4.R_task(119)
+[R2_quad, p_model, p_quad, mdl] = quadratic_r2(x, y);
+
+scatter(results.a_vel.param, results.a_vel.psd_task(119,:));
+a = results.C1.psd_task(119,:)';
+b = results.C1.param(:);
+plot(results.B.R_task)  % positive correlation
+
+sweepNames = fieldnames(results);
+plot_data  = struct();
+
+for si = 1:numel(sweepNames)
+    pname = sweepNames{si};
+
+    param_vec = results.(pname).param(:);
+    psd_row   = results.(pname).psd_task(119, :).';
+
+    plot_data.(pname) = [param_vec, psd_row];
+end
 
 
 %% Whole-brain network model
@@ -522,7 +555,20 @@ for isweep = 1:numel(sweepConfigs)
     end
 end
 
+psd_region = squeeze(PSD_raw_task_alpha(:, 40, :));
+plot(psd_region(128,:))
 
+psd3  = squeeze(mean(PSD_rest_task(:, other_rois, :, :), 2));
+psd33 = squeeze(mean(psd3, 3));
+
+psd2  = squeeze(mean(PSD_task_r0(:, other_rois, :, :), 2));
+psd22 = squeeze(mean(psd2, 3));
+
+psd1  = squeeze(mean(PSD_task_r0(:, rois, :, :), 2));
+psd11 = squeeze(mean(psd1, 3));
+
+scatter(alphaIndex, psd22(128,:))
+plot(r0Index,       psd22(128,:))
 
 vis = [1:30,   181:210];
 smn = [31:49,  211:229];

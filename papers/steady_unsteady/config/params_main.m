@@ -4,7 +4,7 @@ function C = params_main()
 % Usage:
 %   C = params_main();
 
-%% ===== Basic information (does not affect results, but very useful) =====
+%% ===== Basic information =====
 C.project.name    = 'steady_unsteady';
 C.project.version = 'main_v1';
 C.project.date    = datestr(now);
@@ -14,13 +14,12 @@ C.data.TR        = 2.0;          % seconds
 C.data.FS        = 1/C.data.TR;          % Hz
 C.data.nTR       = 290;          % 
 C.data.nROI        = 360;          % 
-C.data.excludesubjects  = [2,35];        % or a vector: [1 3 5]
+C.data.excludesubjects  = [2,35];        % exclude subject with high head motion
 
 C.data.excluderoi  = [];
-C.data.sesnum = 3;
+C.data.sesnum = 1;
 C.data.GSR = 1;
 
-C.preproc.band_cutoff = [0.01 0.1];
 
 
 %% ===== Spectral analysis parameters =====
@@ -45,7 +44,7 @@ C.glm.totalDuration    = 600;     % seconds
 C.glm.numPoints        = 290;     % number of TRs
 C.glm.highResFactor    = 100;     % 0.01s resolution
 C.glm.pulseWidth       = 1;     % seconds
-C.glm.dropTR           = 10;      % Original code used design_matrix(11:end,:), i.e., drop first 10 TRs
+C.glm.dropTR           = 10;      
 
 %% ===== Jansen-Rit model parameters =====
 C.jr.dt        = 1e-3;
@@ -70,8 +69,8 @@ C.jr.C2 = 0.8;
 C.jr.C3 = 0.25;
 C.jr.C4 = 0.25;
 
-C.jr.A      = 3.25;   % EPSP amplitude
-C.jr.B      = 22;     % IPSP amplitude
+C.jr.A      = 3.25;  
+C.jr.B      = 22;    
 C.jr.alpha  = 0.5;
 C.jr.beta  = 0.25;
 % --- Sigmoid ---
@@ -93,7 +92,6 @@ C.stats.multicorrect = 'BH';
 C.stats.perm_seed = 42; 
 C.stats.perm_tail = 'two'; 
 
-C.preproc.band_cutoff = [0.008,0.25];
 
 %% ===== Output and debugging =====
 C.output.save_cache        = true;
