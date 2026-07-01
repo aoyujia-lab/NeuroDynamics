@@ -1,6 +1,4 @@
 function [bold, states] = balloon_from_neural(u, dt, params)
-% balloon_from_neural_py
-% MATLAB implementation matched to the provided Python algorithm:
 % - Euler integration
 % - s_dot = rE - (1/taus)*s - (1/tauf)*(f-1)
 % - v_dot = (f - v^(1/alpha))*(1/tauo)
@@ -20,7 +18,7 @@ arguments
     u double
     dt double = 0.01
 
-    % ---- time constants (Python: taus, tauf, tauo) ----
+    % ---- time constants ----
     params.taus double = 0.65   % signal decay (s)
     params.tauf double = 0.41   % feedback regulation (s)
     params.tauo double = 0.98   % venous volume & deoxyHb (s)
@@ -49,7 +47,7 @@ end
 
 
 
-% ---------- initial conditions (match Python: [0.1, 1, 1, 1]) ----------
+% ---------- initial conditions ----------
 s = zeros(nrois, ntime);  s(:,1) = 0.1;
 f = ones(nrois, ntime);
 v = ones(nrois, ntime);
@@ -65,7 +63,7 @@ ialpha = 1 / alpha;
 
 E0 = params.E0;
 
-% ---------- BOLD coefficients (match Python exactly) ----------
+% ---------- BOLD coefficients ----------
 k1 = 4.3 * params.nu * E0 * params.TE;
 k2 = params.epsilon * params.r0 * E0 * params.TE;
 k3 = 1 - params.epsilon;
@@ -127,7 +125,6 @@ end
 keep = (nTrim + 1):ntime;
 
 bold = bold(:, keep);
-% bold = zscore(bold,0,2);
 states = struct( ...
     's', s(:, keep), ...
     'f', f(:, keep), ...

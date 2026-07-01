@@ -38,8 +38,8 @@ Ccoupl = pick(S,'C',135);
 A      = pick(S,'A',3.25);
 B      = pick(S,'B',22);
 alpha  = pick(S,'alpha',0.5);
-beta   = pick(S,'beta',0);    % paper-style inhibitory gain
-G      = pick(S,'G',2.5);     % kept from your original code
+beta   = pick(S,'beta',0);
+G      = pick(S,'G',2.5);   
 
 e0 = pick(S,'e0',2.5);
 v0 = pick(S,'v0',6);
